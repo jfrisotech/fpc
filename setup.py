@@ -1,12 +1,12 @@
-from setuptools import setup, find_packages
+import setuptools # type: ignore
 
-setup(
+setuptools.setup(
     name='fpc',
     version='0.1.0',
-    packages=find_packages(),
+    packages=setuptools.find_packages(),
     entry_points={
         'console_scripts': [
-            'fpc=main:main',
+            'fpc=fpc.cli:main',
         ],
     },
     install_requires=[

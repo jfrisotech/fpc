@@ -11,6 +11,7 @@ def update_pubspec(project_path: str, preferences: dict):
         content = file.read()
     
     dependencies = []
+    dev_dependencies = []
     
     # Add dependencies based on state management choice
     state_management = preferences['state_management']
@@ -26,8 +27,7 @@ def update_pubspec(project_path: str, preferences: dict):
     elif state_management == 'MobX':
         dependencies.append('  mobx: ^2.2.3')
         dependencies.append('  flutter_mobx: ^2.2.0')
-        dependencies.append('  build_runner: ^2.4.7')
-        dependencies.append('  mobx_codegen: ^2.4.0')
+        dev_dependencies.append('  mobx_codegen: ^2.4.0')
     
     # Add dependencies based on HTTP client choice
     http_client = preferences['http_client']
@@ -38,9 +38,8 @@ def update_pubspec(project_path: str, preferences: dict):
     elif http_client == 'Retrofit':
         dependencies.append('  retrofit: ^4.0.3')
         dependencies.append('  dio: ^5.4.0')
-        dependencies.append('  retrofit_generator: ^8.0.6')
-        dependencies.append('  build_runner: ^2.4.7')
-        dependencies.append('  json_serializable: ^6.7.1')
+        dev_dependencies.append('  retrofit_generator: ^8.0.6')
+        dev_dependencies.append('  json_serializable: ^6.7.1')
     
     # Add dependencies based on local database choice
     database = preferences['database']
@@ -50,20 +49,17 @@ def update_pubspec(project_path: str, preferences: dict):
     elif database == 'Hive':
         dependencies.append('  hive: ^2.2.3')
         dependencies.append('  hive_flutter: ^1.1.0')
-        dependencies.append('  build_runner: ^2.4.7')
-        dependencies.append('  hive_generator: ^2.0.1')
+        dev_dependencies.append('  hive_generator: ^2.0.1')
     elif database == 'Isar':
         dependencies.append('  isar: ^3.1.0+1')
         dependencies.append('  isar_flutter_libs: ^3.1.0+1')
         dependencies.append('  path_provider: ^2.1.1')
-        dependencies.append('  build_runner: ^2.4.7')
-        dependencies.append('  isar_generator: ^3.1.0+1')
+        dev_dependencies.append('  isar_generator: ^3.1.0+1')
     elif database == 'ObjectBox':
         dependencies.append('  objectbox: ^2.3.1')
         dependencies.append('  objectbox_flutter_libs: ^2.3.1')
         dependencies.append('  path_provider: ^2.1.1')
-        dependencies.append('  build_runner: ^2.4.7')
-        dependencies.append('  objectbox_generator: ^2.3.1')
+        dev_dependencies.append('  objectbox_generator: ^2.3.1')
     
     # Add dependencies based on BaaS choice
     baas = preferences['baas']
@@ -80,7 +76,11 @@ def update_pubspec(project_path: str, preferences: dict):
     dependencies.append('  path: ^1.8.3')
     dependencies.append('  shared_preferences: ^2.2.2')
     dependencies.append('  intl: ^0.18.1')
-    dependencies.append('  logger: ^2.0.2+1')
+    dev_dependencies.append('  logger: ^2.0.2+1')
+
+    # Dev dependencies
+    if state_management == 'MobX' or http_client == 'Retrofit' or database == 'Hive' or  database == 'Isar' or database == 'ObjectBox':
+        dev_dependencies.append('  build_runner: ^2.4.7')
     
     # Insert dependencies into pubspec content
     if dependencies:
@@ -88,6 +88,12 @@ def update_pubspec(project_path: str, preferences: dict):
         updated_content = content.replace(
             'dependencies:\n  flutter:\n    sdk: flutter',
             f'dependencies:\n  flutter:\n    sdk: flutter\n\n{dependency_block}'
+        )
+
+        dev_dependency_block = '\n'.join(dev_dependencies)
+        updated_content = updated_content.replace(
+            'dev_dependencies:\n  flutter_test:\n    sdk: flutter',
+            f'dev_dependencies:\n  flutter_test:\n    sdk: flutter\n\n{dev_dependency_block}'
         )
         
         with open(pubspec_path, 'w') as file:

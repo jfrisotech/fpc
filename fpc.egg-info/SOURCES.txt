@@ -1,0 +1,13 @@
+README.md
+setup.py
+fpc/__init__.py
+fpc/cli.py
+fpc.egg-info/PKG-INFO
+fpc.egg-info/SOURCES.txt
+fpc.egg-info/dependency_links.txt
+fpc.egg-info/entry_points.txt
+fpc.egg-info/top_level.txt
+generators/__init__.py
+generators/generator.py
+generators/pubspec.py
+generators/structure.py

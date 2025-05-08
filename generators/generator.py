@@ -143,3 +143,87 @@ class FlutterGenerator:
         update_pubspec(project_path, preferences)
         
         print_color(f"Flutter project '{project_name}' created successfully with the selected options.", Colors.GREEN)
+
+    def run_with_name_interactive(self, project_name: str, project_path: str):
+        """Run project creation with given project name and interactive preferences."""
+        print_color("Flutter Project CLI Generator (Interactive Preferences)", Colors.BOLD)
+        
+        preferences = self.get_project_preferences()
+        
+        output_dir = os.path.dirname(project_path)
+        
+        created_project_path = self.create_flutter_project(project_name, output_dir)
+        
+        generate_project_structure(created_project_path, preferences)
+        
+        create_template_files(created_project_path, preferences)
+        
+        update_pubspec(created_project_path, preferences)
+        
+        print_color(f"Flutter project '{project_name}' created successfully with the selected options.", Colors.GREEN)
+
+    def add_file(self, file_type: str, directory: str, name: str):
+        """Add a file of specified type in the given directory with a template."""
+        import os
+
+        valid_types = ['controller', 'view', 'service', 'model']
+        if file_type not in valid_types:
+            print(f"Error: Invalid file type '{file_type}'. Valid types are: {', '.join(valid_types)}")
+            return
+
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
+
+        file_path = os.path.join(directory, f"{name}.dart")
+
+        if os.path.exists(file_path):
+            print(f"Error: File '{file_path}' already exists.")
+            return
+
+        template_content = self._get_template_content(file_type, name)
+
+        with open(file_path, 'w') as f:
+            f.write(template_content)
+
+        print(f"Created {file_type} file at: {file_path}")
+
+    def _get_template_content(self, file_type: str, name: str) -> str:
+        """Return template content for the given file type and name."""
+        class_name = ''.join(word.capitalize() for word in name.split('_'))
+
+        if file_type == 'controller':
+            return f"""class {class_name}Controller {{
+  // TODO: Implement {class_name}Controller
+}}
+"""
+        elif file_type == 'view':
+            return f"""import 'package:flutter/material.dart';
+
+class {class_name}View extends StatelessWidget {{
+  const {class_name}View({{super.key}});
+
+  @override
+  Widget build(BuildContext context) {{
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('{class_name} View'),
+      ),
+      body: Center(
+        child: Text('This is the {class_name} view.'),
+      ),
+    );
+  }}
+}}
+"""
+        elif file_type == 'service':
+            return f"""class {class_name}Service {{
+  // TODO: Implement {class_name}Service
+}}
+"""
+        elif file_type == 'model':
+            return f"""class {class_name} {{
+  // TODO: Define properties and methods for {class_name} model
+}}
+"""
+        else:
+            return "// Unknown file type"

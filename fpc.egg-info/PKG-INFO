@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: fpc
+Version: 0.1.0
+Summary: FPC CLI
+Home-page: https://github.com/jfrisotech/fpc
+Author: JFriso Technologies
+Requires-Python: >=3.7
+Dynamic: author
+Dynamic: home-page
+Dynamic: requires-python
+Dynamic: summary

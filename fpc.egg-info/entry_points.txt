@@ -1,0 +1,2 @@
+[console_scripts]
+fpc = fpc.cli:main
