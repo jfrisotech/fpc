@@ -12,9 +12,9 @@ def create_clean_architecture_domain(lib_path: str):
     os.makedirs(repositories_path, exist_ok=True)
     os.makedirs(usecases_path, exist_ok=True)
 
+    # Entity
     with open(os.path.join(entities_path, 'user.dart'), 'w') as file:
-        file.write('''
-class User {
+        file.write('''class User {
   final String id;
   final String name;
   final String email;
@@ -27,29 +27,90 @@ class User {
 }
 ''')
 
+    # Repository interface
     with open(os.path.join(repositories_path, 'auth_repository.dart'), 'w') as file:
-        file.write('''
+        file.write('''import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
+import '../entities/user.dart';
+
 abstract class AuthRepository {
-  Future<bool> login(String email, String password);
-  Future<bool> register(String name, String email, String password);
+  Future<Either<Failure, User>> login(String email, String password);
+  Future<Either<Failure, bool>> register(String name, String email, String password);
+  Future<Either<Failure, void>> logout();
 }
 ''')
 
-    with open(os.path.join(usecases_path, 'auth_usecases.dart'), 'w') as file:
-        file.write('''
+    # Individual Use Cases
+    with open(os.path.join(usecases_path, 'login_usecase.dart'), 'w') as file:
+        file.write('''import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
+import '../../core/usecases/usecase.dart';
+import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
 
-class AuthUseCases {
+class LoginUseCase implements UseCase<User, LoginParams> {
   final AuthRepository repository;
 
-  AuthUseCases(this.repository);
+  LoginUseCase(this.repository);
 
-  Future<bool> login(String email, String password) async {
-    return await repository.login(email, password);
+  @override
+  Future<Either<Failure, User>> call(LoginParams params) async {
+    return await repository.login(params.email, params.password);
   }
+}
 
-  Future<bool> register(String name, String email, String password) async {
-    return await repository.register(name, email, password);
+class LoginParams {
+  final String email;
+  final String password;
+
+  LoginParams({required this.email, required this.password});
+}
+''')
+
+    with open(os.path.join(usecases_path, 'register_usecase.dart'), 'w') as file:
+        file.write('''import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
+import '../../core/usecases/usecase.dart';
+import '../repositories/auth_repository.dart';
+
+class RegisterUseCase implements UseCase<bool, RegisterParams> {
+  final AuthRepository repository;
+
+  RegisterUseCase(this.repository);
+
+  @override
+  Future<Either<Failure, bool>> call(RegisterParams params) async {
+    return await repository.register(params.name, params.email, params.password);
+  }
+}
+
+class RegisterParams {
+  final String name;
+  final String email;
+  final String password;
+
+  RegisterParams({
+    required this.name,
+    required this.email,
+    required this.password,
+  });
+}
+''')
+
+    with open(os.path.join(usecases_path, 'logout_usecase.dart'), 'w') as file:
+        file.write('''import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
+import '../../core/usecases/usecase.dart';
+import '../repositories/auth_repository.dart';
+
+class LogoutUseCase implements UseCase<void, NoParams> {
+  final AuthRepository repository;
+
+  LogoutUseCase(this.repository);
+
+  @override
+  Future<Either<Failure, void>> call(NoParams params) async {
+    return await repository.logout();
   }
 }
 ''')

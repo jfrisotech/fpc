@@ -1,86 +1,154 @@
 import os
 
 def create_clean_architecture_presentation(lib_path: str):
-    """Create presentation layer template files for Clean Architecture."""
+    """Create presentation layer template files for Clean Architecture with BLoC."""
     presentation_path = os.path.join(lib_path, 'presentation')
     os.makedirs(presentation_path, exist_ok=True)
 
-    views_path = os.path.join(presentation_path, 'views')
-    viewmodels_path = os.path.join(presentation_path, 'viewmodels')
-    os.makedirs(views_path, exist_ok=True)
-    os.makedirs(viewmodels_path, exist_ok=True)
+    bloc_path = os.path.join(presentation_path, 'bloc', 'auth')
+    pages_path = os.path.join(presentation_path, 'pages')
+    widgets_path = os.path.join(presentation_path, 'widgets')
+    os.makedirs(bloc_path, exist_ok=True)
+    os.makedirs(pages_path, exist_ok=True)
+    os.makedirs(widgets_path, exist_ok=True)
 
-    with open(os.path.join(viewmodels_path, 'auth_viewmodel.dart'), 'w') as file:
-        file.write('''
-import 'package:flutter/foundation.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/usecases/auth_usecases.dart';
+    # BLoC Events
+    with open(os.path.join(bloc_path, 'auth_event.dart'), 'w') as file:
+        file.write('''abstract class AuthEvent {}
 
-class AuthViewModel extends ChangeNotifier {
-  final AuthUseCases authUseCases;
+class LoginEvent extends AuthEvent {
+  final String email;
+  final String password;
 
-  User? _user;
-  bool _isLoading = false;
-  String? _errorMessage;
+  LoginEvent({required this.email, required this.password});
+}
 
-  User? get user => _user;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
+class RegisterEvent extends AuthEvent {
+  final String name;
+  final String email;
+  final String password;
 
-  AuthViewModel(this.authUseCases);
+  RegisterEvent({
+    required this.name,
+    required this.email,
+    required this.password,
+  });
+}
 
-  Future<bool> login(String email, String password) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+class LogoutEvent extends AuthEvent {}
+''')
 
-    try {
-      final success = await authUseCases.login(email, password);
-      _isLoading = false;
-      notifyListeners();
-      return success;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
+    # BLoC States
+    with open(os.path.join(bloc_path, 'auth_state.dart'), 'w') as file:
+        file.write('''import '../../../domain/entities/user.dart';
+
+abstract class AuthState {}
+
+class AuthInitial extends AuthState {}
+
+class AuthLoading extends AuthState {}
+
+class AuthSuccess extends AuthState {
+  final User user;
+
+  AuthSuccess(this.user);
+}
+
+class AuthRegistered extends AuthState {}
+
+class AuthLoggedOut extends AuthState {}
+
+class AuthFailure extends AuthState {
+  final String message;
+
+  AuthFailure(this.message);
+}
+''')
+
+    # BLoC
+    with open(os.path.join(bloc_path, 'auth_bloc.dart'), 'w') as file:
+        file.write('''import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../domain/usecases/login_usecase.dart';
+import '../../../domain/usecases/register_usecase.dart';
+import '../../../domain/usecases/logout_usecase.dart';
+import '../../../core/usecases/usecase.dart';
+import 'auth_event.dart';
+import 'auth_state.dart';
+
+class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  final LoginUseCase loginUseCase;
+  final RegisterUseCase registerUseCase;
+  final LogoutUseCase logoutUseCase;
+
+  AuthBloc({
+    required this.loginUseCase,
+    required this.registerUseCase,
+    required this.logoutUseCase,
+  }) : super(AuthInitial()) {
+    on<LoginEvent>(_onLogin);
+    on<RegisterEvent>(_onRegister);
+    on<LogoutEvent>(_onLogout);
   }
 
-  Future<bool> register(String name, String email, String password) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    final result = await loginUseCase(
+      LoginParams(email: event.email, password: event.password),
+    );
+    
+    result.fold(
+      (failure) => emit(AuthFailure(failure.message)),
+      (user) => emit(AuthSuccess(user)),
+    );
+  }
 
-    try {
-      final success = await authUseCases.register(name, email, password);
-      _isLoading = false;
-      notifyListeners();
-      return success;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
+  Future<void> _onRegister(RegisterEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    final result = await registerUseCase(
+      RegisterParams(
+        name: event.name,
+        email: event.email,
+        password: event.password,
+      ),
+    );
+    
+    result.fold(
+      (failure) => emit(AuthFailure(failure.message)),
+      (success) => emit(AuthRegistered()),
+    );
+  }
+
+  Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    final result = await logoutUseCase(NoParams());
+    
+    result.fold(
+      (failure) => emit(AuthFailure(failure.message)),
+      (_) => emit(AuthLoggedOut()),
+    );
   }
 }
 ''')
 
-    with open(os.path.join(views_path, 'login_view.dart'), 'w') as file:
-        file.write('''
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../viewmodels/auth_viewmodel.dart';
+    # Login Page
+    with open(os.path.join(pages_path, 'login_page.dart'), 'w') as file:
+        file.write('''import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
+import '../bloc/auth/auth_state.dart';
 
-class LoginView extends StatefulWidget {
-  const LoginView({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -94,19 +162,22 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthViewModel(
-        // You should provide AuthUseCases instance here
-        throw UnimplementedError('Provide AuthUseCases instance'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
       ),
-      child: Builder(builder: (context) {
-        final viewModel = Provider.of<AuthViewModel>(context);
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Login'),
-          ),
-          body: Padding(
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthSuccess) {
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (state is AuthFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        },
+        builder: (context, state) {
+          return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
@@ -145,37 +216,35 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: viewModel.isLoading
+                    onPressed: state is AuthLoading
                         ? null
-                        : () async {
+                        : () {
                             if (_formKey.currentState!.validate()) {
-                              final success = await viewModel.login(
-                                _emailController.text.trim(),
-                                _passwordController.text.trim(),
-                              );
-
-                              if (success && mounted) {
-                                Navigator.pushReplacementNamed(context, '/home');
-                              }
+                              context.read<AuthBloc>().add(
+                                    LoginEvent(
+                                      email: _emailController.text.trim(),
+                                      password: _passwordController.text.trim(),
+                                    ),
+                                  );
                             }
                           },
-                    child: viewModel.isLoading
+                    child: state is AuthLoading
                         ? const CircularProgressIndicator()
                         : const Text('Login'),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () {
-                      // Navigate to registration screen
+                      // Navigate to registration page
                     },
-                    child: const Text('Create an account')
-                  )
+                    child: const Text('Create an account'),
+                  ),
                 ],
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }

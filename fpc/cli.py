@@ -35,6 +35,12 @@ def main():
     # help command
     help_parser = subparsers.add_parser('help', help='Show help information')
 
+    # gen command
+    gen_parser = subparsers.add_parser('gen', help='Generate a file with specific state management')
+    gen_parser.add_argument('type', choices=['controller', 'ctrl', 'view', 'model', 'service', 'interface', 'intf'], help='Type of file to generate')
+    gen_parser.add_argument('state_management', choices=['mobx', 'provider', 'bloc', 'getx', 'riverpod', 'none'], help='State management solution')
+    gen_parser.add_argument('path', help='Path to the file (including name)')
+
     args = parser.parse_args()
 
     generator = FlutterGenerator()
@@ -46,6 +52,17 @@ def main():
     elif args.command == 'add':
         # Call a new method to add files based on type, directory, and name
         generator.add_file(args.type, args.directory, args.name)
+    elif args.command == 'gen':
+        # Parse path to separate directory and filename
+        full_path = args.path
+        directory = os.path.dirname(full_path)
+        name = os.path.basename(full_path)
+        
+        # If directory is empty, use current directory
+        if not directory:
+            directory = os.getcwd()
+            
+        generator.generate_file(args.type, args.state_management, directory, name)
     elif args.command == 'help' or args.command is None:
         parser.print_help()
     else:

@@ -165,6 +165,7 @@ class FlutterGenerator:
     def add_file(self, file_type: str, directory: str, name: str):
         """Add a file of specified type in the given directory with a template."""
         import os
+        from core.utils import to_snake_case, to_pascal_case
 
         valid_types = ['controller', 'view', 'service', 'model']
         if file_type not in valid_types:
@@ -174,56 +175,139 @@ class FlutterGenerator:
         if not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
 
-        file_path = os.path.join(directory, f"{name}.dart")
+        # Normalize name to snake_case
+        snake_name = to_snake_case(name)
+        
+        # Strip suffix if present (e.g. auth_controller -> auth)
+        suffix = f"_{file_type}"
+        base_name = snake_name
+        if snake_name.endswith(suffix):
+            base_name = snake_name[:-len(suffix)]
+        
+        # File name should include suffix (e.g. auth_controller.dart)
+        # But if the user provided auth_controller, base_name is auth.
+        # If user provided auth, base_name is auth.
+        # We want the final file to be auth_controller.dart
+        
+        final_file_name = f"{base_name}{suffix}"
+        file_path = os.path.join(directory, f"{final_file_name}.dart")
 
         if os.path.exists(file_path):
             print(f"Error: File '{file_path}' already exists.")
             return
 
-        template_content = self._get_template_content(file_type, name)
+        # Template content needs the class name.
+        # Class name should be PascalCase of base_name (e.g. Auth)
+        # The template will append the suffix (e.g. AuthController)
+        template_content = self._get_template_content(file_type, base_name)
 
         with open(file_path, 'w') as f:
             f.write(template_content)
 
         print(f"Created {file_type} file at: {file_path}")
 
-    def _get_template_content(self, file_type: str, name: str) -> str:
-        """Return template content for the given file type and name."""
-        class_name = ''.join(word.capitalize() for word in name.split('_'))
+    def generate_file(self, file_type: str, state_management: str, directory: str, name: str):
+        """Generate a file with specific state management."""
+        import os
+        from core.utils import to_snake_case, to_pascal_case
+
+        # Normalize file type
+        if file_type == 'ctrl':
+            file_type = 'controller'
+        elif file_type == 'intf':
+            file_type = 'interface'
+        
+        valid_types = ['controller', 'view', 'service', 'model', 'interface']
+        if file_type not in valid_types:
+            print(f"Error: Invalid file type '{file_type}'. Valid types are: {', '.join(valid_types)}")
+            return
+
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
+
+        # Normalize name and strip suffix
+        snake_name = to_snake_case(name)
+        suffix = f"_{file_type}"
+        base_name = snake_name
+        if snake_name.endswith(suffix):
+            base_name = snake_name[:-len(suffix)]
+        
+        final_file_name = f"{base_name}{suffix}"
+        file_path = os.path.join(directory, f"{final_file_name}.dart")
+
+        if os.path.exists(file_path):
+            print(f"Error: File '{file_path}' already exists.")
+            return
+
+        template_content = self._get_specific_template_content(file_type, state_management, base_name)
+
+        with open(file_path, 'w') as f:
+            f.write(template_content)
+
+        print(f"Created {state_management} {file_type} file at: {file_path}")
+
+    def _get_specific_template_content(self, file_type: str, state_management: str, name: str) -> str:
+        """Return template content for specific state management."""
+        from core.utils import to_pascal_case
+        class_name = to_pascal_case(name)
 
         if file_type == 'controller':
-            return f"""class {class_name}Controller {{
-  // TODO: Implement {class_name}Controller
-}}
-"""
+            if state_management == 'mobx':
+                from templates.mobx.controller_template import get_mobx_controller_template
+                return get_mobx_controller_template(class_name)
+            elif state_management == 'provider':
+                from templates.provider.controller_template import get_provider_controller_template
+                return get_provider_controller_template(class_name)
+            elif state_management == 'bloc':
+                from templates.bloc.controller_template import get_bloc_controller_template
+                return get_bloc_controller_template(class_name)
+            elif state_management == 'getx':
+                from templates.getx.controller_template import get_getx_controller_template
+                return get_getx_controller_template(class_name)
+            elif state_management == 'riverpod':
+                from templates.riverpod.controller_template import get_riverpod_controller_template
+                return get_riverpod_controller_template(class_name)
         elif file_type == 'view':
-            return f"""import 'package:flutter/material.dart';
+            if state_management == 'mobx':
+                from templates.mobx.view_template import get_mobx_view_template
+                return get_mobx_view_template(class_name)
+            elif state_management == 'provider':
+                from templates.provider.view_template import get_provider_view_template
+                return get_provider_view_template(class_name)
+            elif state_management == 'bloc':
+                from templates.bloc.view_template import get_bloc_view_template
+                return get_bloc_view_template(class_name)
+            elif state_management == 'getx':
+                from templates.getx.view_template import get_getx_view_template
+                return get_getx_view_template(class_name)
+            elif state_management == 'riverpod':
+                from templates.riverpod.view_template import get_riverpod_view_template
+                return get_riverpod_view_template(class_name)
+        
+        # Fallback to generic if no specific template found
+        return self._get_template_content(file_type, name)
 
-class {class_name}View extends StatelessWidget {{
-  const {class_name}View({{super.key}});
+    def _get_template_content(self, file_type: str, name: str) -> str:
+        """Return template content for the given file type and name."""
+        from templates.generic.controller_template import get_controller_template
+        from templates.generic.view_template import get_view_template
+        from templates.generic.service_template import get_service_template
+        from templates.generic.model_template import get_model_template
+        from templates.generic.interface_template import get_interface_template
+        from core.utils import to_pascal_case
 
-  @override
-  Widget build(BuildContext context) {{
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('{class_name} View'),
-      ),
-      body: Center(
-        child: Text('This is the {class_name} view.'),
-      ),
-    );
-  }}
-}}
-"""
+        # name here is the base name (e.g. auth)
+        class_name = to_pascal_case(name)
+
+        if file_type == 'controller':
+            return get_controller_template(class_name)
+        elif file_type == 'view':
+            return get_view_template(class_name)
         elif file_type == 'service':
-            return f"""class {class_name}Service {{
-  // TODO: Implement {class_name}Service
-}}
-"""
+            return get_service_template(class_name)
         elif file_type == 'model':
-            return f"""class {class_name} {{
-  // TODO: Define properties and methods for {class_name} model
-}}
-"""
+            return get_model_template(class_name)
+        elif file_type == 'interface':
+            return get_interface_template(class_name)
         else:
             return "// Unknown file type"

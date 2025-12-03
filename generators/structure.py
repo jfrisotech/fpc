@@ -8,7 +8,7 @@ def generate_project_structure(project_path: str, preferences: dict):
     lib_path = os.path.join(project_path, 'lib')
     
     # Create common directories
-    common_dirs = ['assets', 'config', 'utils', 'theme', 'l10n']
+    common_dirs = ['assets', 'config', 'utils', 'shared', 'shared/theme', 'l10n']
     _create_directories(lib_path, common_dirs)
     
     # Create architecture-specific directories
