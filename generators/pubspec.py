@@ -1,104 +1,97 @@
 import os
+import subprocess
 from core.utils import print_color, Colors
+from rich.console import Console
 
 def update_pubspec(project_path: str, preferences: dict):
-    """Update pubspec.yaml with dependencies based on preferences."""
-    print_color("Updating pubspec.yaml...", Colors.BLUE)
+    """Update pubspec.yaml with dependencies based on preferences using flutter pub add."""
     
-    pubspec_path = os.path.join(project_path, 'pubspec.yaml')
+    deps_to_fetch = set()
+    dev_deps_to_fetch = set()
     
-    with open(pubspec_path, 'r') as file:
-        content = file.read()
-    
-    dependencies = []
-    dev_dependencies = []
-    
-    # Add dependencies based on state management choice
-    state_management = preferences['state_management']
+    # Architecture
+    architecture = preferences.get('architecture')
+    if architecture == 'Clean Architecture':
+        deps_to_fetch.add('dartz')
+        
+    # State management
+    state_management = preferences.get('state_management')
     if state_management == 'Provider':
-        dependencies.append('  provider:')
+        deps_to_fetch.add('provider')
     elif state_management == 'BLoC':
-        dependencies.append('  flutter_bloc:')
-        dependencies.append('  equatable:')
+        deps_to_fetch.add('flutter_bloc')
+        deps_to_fetch.add('equatable')
     elif state_management == 'GetX':
-        dependencies.append('  get:')
+        deps_to_fetch.add('get')
     elif state_management == 'Riverpod':
-        dependencies.append('  flutter_riverpod:')
+        deps_to_fetch.add('flutter_riverpod')
     elif state_management == 'MobX':
-        dependencies.append('  mobx:')
-        dependencies.append('  flutter_mobx:')
-        dev_dependencies.append('  mobx_codegen:')
+        deps_to_fetch.add('mobx')
+        deps_to_fetch.add('flutter_mobx')
+        dev_deps_to_fetch.add('mobx_codegen')
     
-    # Add dependencies based on HTTP client choice
-    http_client = preferences['http_client']
+    # HTTP client
+    http_client = preferences.get('http_client')
     if http_client == 'Dio':
-        dependencies.append('  dio:')
+        deps_to_fetch.add('dio')
     elif http_client == 'http':
-        dependencies.append('  http:')
-    elif http_client == 'Retrofit':
-        dependencies.append('  retrofit:')
-        dependencies.append('  dio:')
-        dev_dependencies.append('  retrofit_generator:')
-        dev_dependencies.append('  json_serializable:')
+        deps_to_fetch.add('http')
     
-    # Add dependencies based on local database choice
-    database = preferences['database']
+    # Database
+    database = preferences.get('database')
     if database == 'SQLite (sqflite)':
-        dependencies.append('  sqflite:')
-        dependencies.append('  path_provider:')
+        deps_to_fetch.add('sqflite')
+        deps_to_fetch.add('path_provider')
     elif database == 'Hive':
-        dependencies.append('  hive:')
-        dependencies.append('  hive_flutter:')
-        dev_dependencies.append('  hive_generator:')
+        deps_to_fetch.add('hive')
+        deps_to_fetch.add('hive_flutter')
+        dev_deps_to_fetch.add('hive_generator')
     elif database == 'Isar':
-        dependencies.append('  isar:')
-        dependencies.append('  isar_flutter_libs:')
-        dependencies.append('  path_provider:')
-        dev_dependencies.append('  isar_generator:')
+        deps_to_fetch.add('isar')
+        deps_to_fetch.add('isar_flutter_libs')
+        deps_to_fetch.add('path_provider')
+        dev_deps_to_fetch.add('isar_generator')
     elif database == 'ObjectBox':
-        dependencies.append('  objectbox:')
-        dependencies.append('  objectbox_flutter_libs:')
-        dependencies.append('  path_provider:')
-        dev_dependencies.append('  objectbox_generator:')
+        deps_to_fetch.add('objectbox')
+        deps_to_fetch.add('objectbox_flutter_libs')
+        deps_to_fetch.add('path_provider')
+        dev_deps_to_fetch.add('objectbox_generator')
     
-    # Add dependencies based on BaaS choice
-    baas = preferences['baas']
+    # BaaS
+    baas = preferences.get('baas')
     if baas == 'Firebase':
-        dependencies.append('  firebase_core:')
-        dependencies.append('  firebase_auth:')
-        dependencies.append('  cloud_firestore:')
+        deps_to_fetch.add('firebase_core')
+        deps_to_fetch.add('firebase_auth')
+        deps_to_fetch.add('cloud_firestore')
     elif baas == 'Supabase':
-        dependencies.append('  supabase_flutter:')
+        deps_to_fetch.add('supabase_flutter')
     elif baas == 'Appwrite':
-        dependencies.append('  appwrite:')
+        deps_to_fetch.add('appwrite')
     
     # Common utility dependencies
-    dependencies.append('  path:')
-    dependencies.append('  shared_preferences:')
-    dependencies.append('  intl:')
-    dev_dependencies.append('  logger:')
+    deps_to_fetch.add('path')
+    deps_to_fetch.add('shared_preferences')
+    deps_to_fetch.add('intl')
+    dev_deps_to_fetch.add('logger')
 
-    # Dev dependencies
-    if state_management == 'MobX' or http_client == 'Retrofit' or database == 'Hive' or  database == 'Isar' or database == 'ObjectBox':
-        dev_dependencies.append('  build_runner:')
-    
-    # Insert dependencies into pubspec content
-    if dependencies:
-        dependency_block = '\n'.join(dependencies)
-        updated_content = content.replace(
-            'dependencies:\n  flutter:\n    sdk: flutter',
-            f'dependencies:\n  flutter:\n    sdk: flutter\n\n{dependency_block}'
-        )
-
-        dev_dependency_block = '\n'.join(dev_dependencies)
-        updated_content = updated_content.replace(
-            'dev_dependencies:\n  flutter_test:\n    sdk: flutter',
-            f'dev_dependencies:\n  flutter_test:\n    sdk: flutter\n\n{dev_dependency_block}'
-        )
+    # Dev dependencies for build_runner
+    if state_management == 'MobX' or database in ['Hive', 'Isar', 'ObjectBox']:
+        dev_deps_to_fetch.add('build_runner')
         
-        with open(pubspec_path, 'w') as file:
-            file.write(updated_content)
+    console = Console()
+    with console.status("[bold blue]Resolving and injecting compatible packages via flutter pub add...[/bold blue]", spinner="dots"):
+        all_deps = list(deps_to_fetch) + [f"dev:{pkg}" for pkg in dev_deps_to_fetch]
         
-        print_color("pubspec.yaml updated successfully!", Colors.GREEN)
-    else:
-        print_color("No dependencies to add to pubspec.yaml", Colors.YELLOW)
+        if all_deps:
+            try:
+                subprocess.run(
+                    ['flutter', 'pub', 'add'] + all_deps,
+                    cwd=project_path,
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+            except subprocess.CalledProcessError as e:
+                print_color(f"Error resolving dependencies: {e.stderr}", Colors.RED)
+                
+    print_color("pubspec.yaml updated with compatible versions successfully!", Colors.GREEN)

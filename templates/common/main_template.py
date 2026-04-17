@@ -53,9 +53,9 @@ Future<void> setupServices() async {
 '''
         app_initialization_code = '// await setupServices();'
     
-    # State management setup
+    # State management setup and app wrappers
     state_management_setup = ''
-    app_wrapper = 'MyApp()'
+    app_wrapper = 'AppWidget()'
     
     state_management = preferences['state_management']
     if state_management == 'Provider':
@@ -68,7 +68,7 @@ MultiProvider(
         // Register your providers here
         // ChangeNotifierProvider(create: (_) => YourViewModel()),
       ],
-      child: MyApp(),
+      child: const AppWidget(),
     )'''
     elif state_management == 'BLoC':
         state_management_setup = '''
@@ -80,38 +80,29 @@ MultiBlocProvider(
         // Register your blocs here
         // BlocProvider(create: (_) => YourBloc()),
       ],
-      child: MyApp(),
+      child: const AppWidget(),
     )'''
     elif state_management == 'GetX':
         state_management_setup = '''
 import 'package:get/get.dart';
 '''
-        app_wrapper = 'GetMaterialApp(home: HomePage())'
+        app_wrapper = 'const AppWidget()'
     elif state_management == 'Riverpod':
         state_management_setup = '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 '''
-        app_wrapper = 'ProviderScope(child: MyApp())'
+        app_wrapper = 'ProviderScope(child: const AppWidget())'
     elif state_management == 'MobX':
         state_management_setup = '''
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:provider/provider.dart';
 '''
-        app_wrapper = '''
-MultiProvider(
-      providers: [
-        // Register your stores here
-        // Provider<YourStore>(create: (_) => YourStore()),
-      ],
-      child: MyApp(),
-    )'''
+        app_wrapper = 'const AppWidget()'
     
     # Main file content
-    return f'''
+    main_content = f'''
 import 'package:flutter/material.dart';
 {state_management_setup}
-import 'config/app_routes.dart';
-import 'config/app_theme.dart';
+import 'app/app_widget.dart';
 {setup_code}
 
 void main() async {{
@@ -119,12 +110,10 @@ void main() async {{
   {app_initialization_code}
   runApp({app_wrapper});
 }}
+'''
 
-class MyApp extends StatelessWidget {{
-  const MyApp({{super.key}});
-
-  @override
-  Widget build(BuildContext context) {{
+    # App widget content
+    material_app = '''
     return MaterialApp(
       title: 'Flutter App',
       theme: AppTheme.lightTheme,
@@ -133,6 +122,34 @@ class MyApp extends StatelessWidget {{
       routes: AppRoutes.routes,
       initialRoute: AppRoutes.initialRoute,
     );
+'''
+    if state_management == 'GetX':
+        material_app = '''
+    return GetMaterialApp(
+      title: 'Flutter App',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      initialRoute: AppRoutes.initialRoute,
+      // Use GetPages or fallback to routes
+      routes: AppRoutes.routes,
+    );
+'''
+
+    getx_import = "import 'package:get/get.dart';" if state_management == 'GetX' else ""
+    app_widget_content = f'''
+import 'package:flutter/material.dart';
+{getx_import}
+import 'config/app_routes.dart';
+import 'config/app_theme.dart';
+
+class AppWidget extends StatelessWidget {{
+  const AppWidget({{super.key}});
+
+  @override
+  Widget build(BuildContext context) {{
+{material_app}
   }}
 }}
 '''
+    return main_content, app_widget_content

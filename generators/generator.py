@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import json
 from typing import Dict
 from core.utils import print_color, Colors
 from generators.structure import generate_project_structure
@@ -29,7 +30,6 @@ class FlutterGenerator:
         self.http_client_options = [
             'Dio',
             'http',
-            'Retrofit',
             'None',
         ]
         
@@ -50,51 +50,68 @@ class FlutterGenerator:
 
     def get_user_choice(self, options, message) -> str:
         """Get user choice from a list of options."""
-        print_color(message, Colors.HEADER)
+        from rich.console import Console
+        from rich.prompt import IntPrompt
+        console = Console()
         
+        console.print(f"\\n[magenta bold]{message}[/magenta bold]")
         for i, option in enumerate(options, 1):
-            print(f"{i}. {option}")
-        
+            console.print(f"  [cyan]{i}.[/cyan] {option}")
+            
         while True:
-            try:
-                choice = input(f"{Colors.YELLOW}Select an option (1-{len(options)}): {Colors.ENDC}")
-                index = int(choice) - 1
-                if 0 <= index < len(options):
-                    return options[index]
-                else:
-                    print_color(f"Please enter a number between 1 and {len(options)}", Colors.RED)
-            except ValueError:
-                print_color("Please enter a valid number", Colors.RED)
+            choice = IntPrompt.ask("[yellow]Select an option[/yellow]")
+            if 1 <= choice <= len(options):
+                return options[choice - 1]
+            console.print(f"[red]Please enter a number between 1 and {len(options)}[/red]")
 
-    def get_project_preferences(self) -> Dict[str, str]:
-        """Get user preferences for project structure."""
-        architecture = self.get_user_choice(
-            self.architecture_options,
-            "Select architecture pattern:"
-        )
+    def get_project_preferences(self, headless_args=None) -> Dict[str, str]:
+        """Get user preferences for project structure, respecting headless args."""
         
-        state_management = self.get_user_choice(
-            self.state_management_options,
-            "Select state management solution:"
-        )
+        def map_choice(short_choice, full_options):
+            if not short_choice:
+                return None
+            short_choice = short_choice.lower()
+            for opt in full_options:
+                if opt.lower().startswith(short_choice) or short_choice in opt.lower():
+                    return opt
+            return None
+
+        architecture = None
+        state_management = None
+        http_client = None
+        database = None
+        baas = None
+        folder_structure = None
         
-        http_client = self.get_user_choice(
-            self.http_client_options,
-            "Select HTTP client:"
-        )
+        folder_structure_options = [
+            'Standard (Layer First)',
+            'Modular (Feature First)'
+        ]
         
-        database = self.get_user_choice(
-            self.database_options,
-            "Select local database:"
-        )
-        
-        baas = self.get_user_choice(
-            self.baas_options,
-            "Select Backend-as-a-Service:"
-        )
+        if headless_args:
+            architecture = map_choice(headless_args.get('arch'), self.architecture_options)
+            state_management = map_choice(headless_args.get('state'), self.state_management_options)
+            http_client = map_choice(headless_args.get('http'), self.http_client_options)
+            database = map_choice(headless_args.get('db'), self.database_options)
+            baas = map_choice(headless_args.get('baas'), self.baas_options)
+            folder_structure = map_choice(headless_args.get('structure'), folder_structure_options)
+
+        if not architecture:
+            architecture = self.get_user_choice(self.architecture_options, "Select architecture pattern:")
+        if not folder_structure:
+            folder_structure = self.get_user_choice(folder_structure_options, "Select folder structure:")
+        if not state_management:
+            state_management = self.get_user_choice(self.state_management_options, "Select state management solution:")
+        if not http_client:
+            http_client = self.get_user_choice(self.http_client_options, "Select HTTP client:")
+        if not database:
+            database = self.get_user_choice(self.database_options, "Select local database:")
+        if not baas:
+            baas = self.get_user_choice(self.baas_options, "Select Backend-as-a-Service:")
         
         return {
             'architecture': architecture,
+            'folder_structure': folder_structure,
             'state_management': state_management,
             'http_client': http_client,
             'database': database,
@@ -103,17 +120,18 @@ class FlutterGenerator:
 
     def create_flutter_project(self, project_name: str, output_dir: str) -> str:
         """Create a base Flutter project."""
-        print_color(f"Creating base Flutter project '{project_name}'...", Colors.BLUE)
-        
+        from rich.console import Console
+        console = Console()
         project_path = os.path.join(output_dir, project_name)
         
         try:
-            subprocess.run(
-                ['flutter', 'create', '--project-name', project_name, project_path],
-                check=True,
-                capture_output=True,
-                text=True
-            )
+            with console.status(f"[bold blue]Running 'flutter create {project_name}'...[/bold blue]", spinner="dots"):
+                subprocess.run(
+                    ['flutter', 'create', '--project-name', project_name, project_path],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
             print_color("Base Flutter project created successfully!", Colors.GREEN)
             return project_path
         except subprocess.CalledProcessError as e:
@@ -136,28 +154,51 @@ class FlutterGenerator:
         
         project_path = self.create_flutter_project(project_name, output_dir)
         
+        self.save_fpc_config(project_path, preferences)
         generate_project_structure(project_path, preferences)
-        
         create_template_files(project_path, preferences)
-        
         update_pubspec(project_path, preferences)
         
         print_color(f"Flutter project '{project_name}' created successfully with the selected options.", Colors.GREEN)
 
-    def run_with_name_interactive(self, project_name: str, project_path: str):
-        """Run project creation with given project name and interactive preferences."""
-        print_color("Flutter Project CLI Generator (Interactive Preferences)", Colors.BOLD)
+    def save_fpc_config(self, project_path: str, preferences: dict):
+        config_path = os.path.join(project_path, '.fpc.json')
+        try:
+            with open(config_path, 'w') as f:
+                json.dump(preferences, f, indent=2)
+        except Exception as e:
+            print_color(f"Failed to save .fpc.json config: {e}", Colors.YELLOW)
+
+    def get_fpc_config(self, current_dir: str) -> dict:
+        """Finds .fpc.json traversing up from current_dir."""
+        d = os.path.abspath(current_dir)
+        while True:
+            p = os.path.join(d, '.fpc.json')
+            if os.path.exists(p):
+                try:
+                    with open(p, 'r') as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+            parent = os.path.dirname(d)
+            if parent == d:
+                break
+            d = parent
+        return {}
+
+    def run_with_name_interactive(self, project_name: str, project_path: str, headless_args=None):
+        """Run project creation with given project name and interactive/headless preferences."""
+        print_color("Flutter Project CLI Generator", Colors.BOLD)
         
-        preferences = self.get_project_preferences()
+        preferences = self.get_project_preferences(headless_args)
         
         output_dir = os.path.dirname(project_path)
         
         created_project_path = self.create_flutter_project(project_name, output_dir)
         
+        self.save_fpc_config(created_project_path, preferences)
         generate_project_structure(created_project_path, preferences)
-        
         create_template_files(created_project_path, preferences)
-        
         update_pubspec(created_project_path, preferences)
         
         print_color(f"Flutter project '{project_name}' created successfully with the selected options.", Colors.GREEN)
@@ -206,10 +247,29 @@ class FlutterGenerator:
 
         print(f"Created {file_type} file at: {file_path}")
 
-    def generate_file(self, file_type: str, state_management: str, directory: str, name: str):
+    def generate_file(self, file_type: str, directory: str, name: str, state_management: str = None):
         """Generate a file with specific state management."""
         import os
         from core.utils import to_snake_case, to_pascal_case
+        
+        preferences = self.get_fpc_config(directory)
+        if not state_management:
+            state_management = preferences.get('state_management', 'none').lower()
+            if state_management == 'none':
+                # Map empty or "none" strings
+                state_management = 'none'
+
+        if state_management:
+            state_management = state_management.lower()
+            defaults = {
+                'provider': 'provider', 'bloc': 'bloc', 'getx': 'getx',
+                'riverpod': 'riverpod', 'mobx': 'mobx'
+            }
+            # Handle if config says "BLoC"
+            for k in defaults.keys():
+                if k in state_management:
+                    state_management = k
+                    break
 
         # Normalize file type
         if file_type == 'ctrl':

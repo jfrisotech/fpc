@@ -1,181 +1,162 @@
 # FPC - Flutter Project CLI
 
-A powerful CLI tool for generating Flutter projects with customizable architecture patterns and state management solutions.
+A powerful, **context-aware** CLI tool for generating Flutter projects with customizable architecture patterns, dynamic imports, state management solutions, and a premium UX.
 
-## Features
+## 🌟 Features
 
-- 🏗️ **Multiple Architecture Patterns**: MVC, MVVM, Clean Architecture
-- 🔄 **State Management Support**: Provider, BLoC, GetX, Riverpod, MobX
-- 📦 **Smart Code Generation**: Generate controllers, views, models, services, and interfaces
-- 🎯 **Convention Enforcement**: Automatic snake_case for files, PascalCase for classes
-- 🚀 **Latest Dependencies**: Always fetches the latest package versions
+- 🏗️ **Multiple Architecture Patterns**: MVC, MVVM, Clean Architecture.
+- 🧠 **Context-Aware Scaffolding (`.fpc.json`)**: Remembers your project choices so you don't have to repeat flags!
+- 🔄 **State Management Support**: Provider, BLoC, GetX, Riverpod, MobX.
+- 📦 **Smart & Dynamic Code Generation**: Generates controllers, views, models, services, and interfaces with **dynamic imports** based on your database/HTTP preferences (e.g., auto-injects Hive or Firestore annotations).
+- 🎯 **Headless Mode**: Fully automate project scaffolding without interactive prompts using CLI flags.
+- 🚀 **Robust Dependency Injection**: Modifies `pubspec.yaml` natively using an AST parser (`ruamel.yaml`), preserving comments and indentation.
+- 💅 **Premium Terminal UI**: Beautiful progress spinners, colored logs, and interactive menus powered by `Rich`.
 
-## Installation
+---
+
+## 💻 Installation
 
 ### Prerequisites
 
-- Flutter SDK installed and in your PATH
+- Flutter SDK installed and in your `PATH`
 - Python 3.7 or higher
 
-### Install from source
+### Fresh Install (From Source)
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd fpc
 
-# Install the package
-pip install -e .
+# Install the package globally in developer mode
+python3 -m pip install -e .
 ```
 
-After installation, the `fpc` command will be available globally.
+After installation, the `fpc` command will be available globally in your terminal.
 
-## Usage
+### Updating the CLI
 
-### Create a New Project
+When new updates are pushed to the repository, you can update your local FPC instance by pulling the latest changes and upgrading the dependencies:
 
+```bash
+cd /path/to/fpc
+git pull origin main
+python3 -m pip install --upgrade -e .
+```
+
+---
+
+## 🛠 Usage
+
+### 1. Create a New Project
+
+**Interactive Mode:**
 ```bash
 fpc create -n my_app -p /path/to/output
 ```
-
-This will prompt you to select:
+This launches a beautiful interactive UI that prompts you to select:
 - Architecture pattern (MVC, MVVM, Clean Architecture)
 - State management solution (Provider, BLoC, GetX, Riverpod, MobX, None)
-- HTTP client (Dio, http, Retrofit, None)
+- HTTP client (Dio, http, None)
 - Local database (SQLite, Hive, Isar, ObjectBox, None)
 - Backend-as-a-Service (Firebase, Supabase, Appwrite, None)
 
-### Generate Files with State Management
+**Headless Mode (CI/CD / Automation):**
+You can bypass the interactive menus by passing all arguments directly:
+```bash
+fpc create -n my_app -p ~/projects --arch mvc --state bloc --db hive --http dio --baas firebase
+```
+*Note: Run `fpc create --help` to see all available headless choices.*
 
-The `gen` command allows you to generate files with specific state management configurations:
+> **What happens under the hood?**
+> A hidden `.fpc.json` file is generated at the root of your newly created Flutter project. This acts as the project's brain!
+
+---
+
+### 2. Generate Context-Aware Files
+
+Because of the `.fpc.json` configuration, running commands inside your project folder no longer requires explicitly mentioning the state management. The CLI knows your project!
 
 ```bash
-fpc gen <type> <state_management> <path>
+# General syntax
+fpc gen <type> <path>
 ```
 
-#### Generate Controllers
+#### Generate Controllers & Views
 
 ```bash
-# MobX controller
-fpc gen ctrl mobx lib/controllers/auth_controller
+# Automatically pulls your default State Management from .fpc.json
+fpc gen ctrl lib/controllers/auth_controller
 
-# Provider controller
-fpc gen ctrl provider lib/controllers/user_controller
+fpc gen view lib/views/auth_view
+```
+*(If the project is BLoC, it generates `BlocBuilder`. If MobX, it wraps with `Observer`, etc.)*
 
-# BLoC controller
-fpc gen ctrl bloc lib/controllers/home_controller
-
-# GetX controller
-fpc gen ctrl getx lib/controllers/settings_controller
-
-# Riverpod controller
-fpc gen ctrl riverpod lib/controllers/profile_controller
+**Overriding the default:**
+You can still force a specific state management structure by using the `-s` or `--state` flag:
+```bash
+fpc gen view lib/features/settings/settings_view -s getx
 ```
 
-#### Generate Views
-
-Views are generated with the appropriate state management widgets:
+#### Generate Smart Models
+Models are generated dynamically based on your HTTP and DB choices. For instance, if your project uses `Dio` and `Hive`, generating a model will automatically inject `@HiveType`!
 
 ```bash
-# MobX view (with Observer)
-fpc gen view mobx lib/views/auth_view
-
-# Provider view (with Consumer)
-fpc gen view provider lib/views/user_view
-
-# BLoC view (with BlocBuilder)
-fpc gen view bloc lib/views/home_view
-
-# GetX view (with GetView)
-fpc gen view getx lib/views/settings_view
-
-# Riverpod view (with ConsumerWidget)
-fpc gen view riverpod lib/views/profile_view
+fpc gen model lib/models/product
 ```
 
-#### Generate Other Files
-
+#### Generate Services and Interfaces
 ```bash
-# Model
-fpc gen model none lib/models/user
-
-# Service
-fpc gen service none lib/services/api_service
-
-# Interface (abstract class)
-fpc gen intf none lib/interfaces/repository
+fpc gen service lib/services/api_service
+fpc gen intf lib/interfaces/repository
 ```
 
-### Add Files to Existing Project
+---
 
-For adding generic files without state management specifics:
+### 3. Add Generic Files (No State Management)
+
+For adding base structures without specific templates:
 
 ```bash
 fpc add -t controller -d lib/controllers -n auth
 fpc add -t view -d lib/views -n home
-fpc add -t model -d lib/models -n user
-fpc add -t service -d lib/services -n api
 ```
 
-## File Type Aliases
+---
 
+## 📋 File Type Aliases
+
+For writing commands faster, use abbreviations:
 - `ctrl` → `controller`
 - `intf` → `interface`
 
-## Examples
+---
 
-### Complete workflow example
+## 🏗️ Project Structure Expectations
 
-```bash
-# 1. Create a new project
-fpc create -n my_app -p ~/projects
+The generated skeleton enforces clean boundaries:
 
-# 2. Generate a MobX controller
-fpc gen ctrl mobx lib/features/auth/auth_controller
-
-# 3. Generate a matching MobX view
-fpc gen view mobx lib/features/auth/auth_view
-
-# 4. Generate a model
-fpc gen model none lib/models/user
-
-# 5. Generate an interface
-fpc gen intf none lib/interfaces/auth_repository
-```
-
-## Project Structure
-
-The generated project will have a clean, organized structure:
-
-```
+```text
 lib/
 ├── main.dart
-├── config/
+├── config/              # Routes, Themes and BaaS initialization
 │   ├── app_config.dart
 │   ├── app_routes.dart
 │   └── app_theme.dart
-├── controllers/      # MVC
-├── viewmodels/       # MVVM
+├── shared/              # Reusable design system / constants
+│   └── theme/
+├── controllers/         # (Depends on MVC vs MVVM vs Clean Arch)
 ├── views/
 ├── models/
-├── services/
 └── ...
 ```
 
-## State Management Templates
+---
 
-Each state management solution comes with its specific boilerplate:
+## 🤝 Contributing
 
-- **MobX**: Store classes with `@observable` and `@action`
-- **Provider**: `ChangeNotifier` classes
-- **BLoC**: Bloc classes with events and states
-- **GetX**: `GetxController` with reactive variables
-- **Riverpod**: `StateNotifier` with providers
+Contributions are welcome! If you're planning to submit a PR to add a new State Management or Architecture option, please remember to update the corresponding template generator functions inside `templates/` and update `generator.py` to respect the newly available headless flags.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
+## 📄 License
 
 This project is licensed under the MIT License.

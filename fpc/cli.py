@@ -20,6 +20,12 @@ def main():
     create_parser = subparsers.add_parser('create', help='Create a new Flutter project')
     create_parser.add_argument('-n', '--name', required=True, help='Project name')
     create_parser.add_argument('-p', '--path', default=os.getcwd(), help='Output directory path')
+    create_parser.add_argument('--arch', choices=['mvc', 'mvvm', 'clean'], help='Architecture pattern')
+    create_parser.add_argument('--state', choices=['provider', 'bloc', 'getx', 'riverpod', 'mobx', 'none'], help='State management')
+    create_parser.add_argument('--http', choices=['dio', 'http', 'none'], help='HTTP Client')
+    create_parser.add_argument('--db', choices=['sqlite', 'hive', 'isar', 'objectbox', 'none'], help='Local database')
+    create_parser.add_argument('--baas', choices=['firebase', 'supabase', 'appwrite', 'none'], help='Backend as a Service')
+    create_parser.add_argument('--structure', choices=['standard', 'modular'], help='Folder structure pattern')
 
     # add command
     add_parser = subparsers.add_parser('add', help='Add files to an existing project')
@@ -38,8 +44,8 @@ def main():
     # gen command
     gen_parser = subparsers.add_parser('gen', help='Generate a file with specific state management')
     gen_parser.add_argument('type', choices=['controller', 'ctrl', 'view', 'model', 'service', 'interface', 'intf'], help='Type of file to generate')
-    gen_parser.add_argument('state_management', choices=['mobx', 'provider', 'bloc', 'getx', 'riverpod', 'none'], help='State management solution')
     gen_parser.add_argument('path', help='Path to the file (including name)')
+    gen_parser.add_argument('-s', '--state', choices=['mobx', 'provider', 'bloc', 'getx', 'riverpod', 'none'], help='State management solution (overrides project default)')
 
     args = parser.parse_args()
 
@@ -48,7 +54,15 @@ def main():
     if args.command == 'create':
         output_path = os.path.abspath(args.path)
         project_path = os.path.join(output_path, args.name)
-        generator.run_with_name_interactive(args.name, project_path)
+        headless_args = {
+            'arch': args.arch,
+            'state': args.state,
+            'http': args.http,
+            'db': args.db,
+            'baas': args.baas,
+            'structure': args.structure
+        }
+        generator.run_with_name_interactive(args.name, project_path, headless_args)
     elif args.command == 'add':
         # Call a new method to add files based on type, directory, and name
         generator.add_file(args.type, args.directory, args.name)
@@ -62,7 +76,7 @@ def main():
         if not directory:
             directory = os.getcwd()
             
-        generator.generate_file(args.type, args.state_management, directory, name)
+        generator.generate_file(args.type, directory, name, state_management=args.state)
     elif args.command == 'help' or args.command is None:
         parser.print_help()
     else:

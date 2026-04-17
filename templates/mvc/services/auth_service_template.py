@@ -6,7 +6,7 @@ class AuthService {
   Future<UserModel> login(String email, String password) async {
     await Future.delayed(Duration(seconds: 1));
     return UserModel(
-      id: '1',
+      uid: '1',
       name: 'Test User',
       email: email,
     );

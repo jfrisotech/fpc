@@ -4,6 +4,7 @@ from templates.common.main_template import get_main_file_content
 from templates.common.app_routes_template import get_app_routes_content
 from templates.common.app_theme_template import get_app_theme_content
 from templates.common.app_config_template import get_app_config_content
+from templates.common.gitignore_template import get_gitignore_content
 from templates.mvc.mvc_templates import create_mvc_templates
 from templates.mvvm.mvvm_templates import create_mvvm_templates
 from templates.clean_arch.clean_architecture_data import create_clean_architecture_data
@@ -15,34 +16,68 @@ def create_template_files(project_path: str, preferences: dict):
     print_color("Creating template files...", Colors.BLUE)
     
     lib_path = os.path.join(project_path, 'lib')
+    app_path = os.path.join(lib_path, 'app')
+    os.makedirs(app_path, exist_ok=True)
     
-    # Create main.dart
-    _create_main_file(lib_path, preferences)
+    # Create main.dart and app_widget.dart
+    _create_main_files(lib_path, app_path, preferences)
     
     # Create app configuration files
-    _create_app_config_files(lib_path, preferences)
+    _create_app_config_files(app_path, preferences)
     
     # Create design system files
-    _create_design_system_files(lib_path)
+    _create_design_system_files(app_path)
     
+    # Create/Overwrite .gitignore
+    with open(os.path.join(project_path, '.gitignore'), 'w') as file:
+        file.write(get_gitignore_content())
+    
+    folder_structure = preferences.get('folder_structure', 'Standard (Layer First)')
+    if folder_structure == 'Modular (Feature First)':
+        arch_path = os.path.join(app_path, 'modules', 'auth')
+    else:
+        arch_path = app_path
+        
     # Create architecture-specific files
-    architecture = preferences['architecture']
+    architecture = preferences.get('architecture', '')
     if architecture == 'MVC (Model-View-Controller)':
-        _create_mvc_template_files(lib_path, preferences)
+        _create_mvc_template_files(arch_path, preferences)
     elif architecture == 'MVVM (Model-View-ViewModel)':
-        _create_mvvm_template_files(lib_path, preferences)
+        _create_mvvm_template_files(arch_path, preferences)
     elif architecture == 'Clean Architecture':
-        _create_clean_architecture_template_files(lib_path, preferences)
+        _create_clean_architecture_template_files(arch_path, app_path, preferences)
     
+    # Overwrite default flutter test file
+    test_path = os.path.join(project_path, 'test')
+    os.makedirs(test_path, exist_ok=True)
+    project_name = os.path.basename(os.path.normpath(project_path))
+    
+    with open(os.path.join(test_path, 'widget_test.dart'), 'w') as file:
+        file.write(f'''import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:{project_name}/app/app_widget.dart';
+
+void main() {{
+  testWidgets('AppWidget loading test', (WidgetTester tester) async {{
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const AppWidget());
+    expect(find.byType(MaterialApp), findsOneWidget);
+  }});
+}}
+''')
+
     print_color("Template files created successfully!", Colors.GREEN)
 
-def _create_main_file(lib_path: str, preferences: dict):
-    """Create main.dart file."""
-    main_content = get_main_file_content(preferences)
-    # Ensure lib_path exists
-    os.makedirs(lib_path, exist_ok=True)
+def _create_main_files(lib_path: str, app_path: str, preferences: dict):
+    """Create main.dart and app_widget.dart files."""
+    # Generate content
+    main_content, app_widget_content = get_main_file_content(preferences)
+    
     with open(os.path.join(lib_path, 'main.dart'), 'w') as file:
         file.write(main_content)
+        
+    with open(os.path.join(app_path, 'app_widget.dart'), 'w') as file:
+        file.write(app_widget_content)
 
 def _create_app_config_files(lib_path: str, preferences: dict):
     """Create app configuration files."""
@@ -53,7 +88,7 @@ def _create_app_config_files(lib_path: str, preferences: dict):
     # File creations
     # Create app_routes.dart
     with open(os.path.join(config_path, 'app_routes.dart'), 'w') as file:
-        file.write(get_app_routes_content())
+        file.write(get_app_routes_content(preferences))
     
     # Create app_theme.dart
     with open(os.path.join(config_path, 'app_theme.dart'), 'w') as file:
@@ -67,20 +102,22 @@ def _create_app_config_files(lib_path: str, preferences: dict):
 
 def _create_mvc_template_files(lib_path: str, preferences: dict):
     """Create template files for MVC architecture."""
-    create_mvc_templates(lib_path)
+    create_mvc_templates(lib_path, preferences)
 
 def _create_mvvm_template_files(lib_path: str, preferences: dict):
     """Create template files for MVVM architecture."""
     create_mvvm_templates(lib_path, preferences)
 
-def _create_clean_architecture_template_files(lib_path: str, preferences: dict):
+def _create_clean_architecture_template_files(arch_path: str, app_path: str, preferences: dict):
     """Create template files for Clean Architecture."""
     from templates.clean_arch.core.clean_architecture_core import create_clean_architecture_core
     
-    create_clean_architecture_core(lib_path)
-    create_clean_architecture_data(lib_path)
-    create_clean_architecture_domain(lib_path)
-    create_clean_architecture_presentation(lib_path)
+    # Core is always bound to app_path
+    create_clean_architecture_core(app_path)
+    # Architecture specifics bound to arch_path
+    create_clean_architecture_data(arch_path, preferences)
+    create_clean_architecture_domain(arch_path, preferences)
+    create_clean_architecture_presentation(arch_path, preferences)
 
 def _create_design_system_files(lib_path: str):
     """Create design system files in shared/theme folder."""
