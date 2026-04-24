@@ -1,162 +1,121 @@
-# FPC - Flutter Project CLI
+# FPC - Flutter Project CLI 🚀
 
-A powerful, **context-aware** CLI tool for generating Flutter projects with customizable architecture patterns, dynamic imports, state management solutions, and a premium UX.
+A powerful, **context-aware** CLI tool designed to professionalize Flutter development. FPC generates production-ready codebases with customizable architecture patterns, automatic testing structures, and a premium developer experience.
 
-## 🌟 Features
+---
 
-- 🏗️ **Multiple Architecture Patterns**: MVC, MVVM, Clean Architecture.
-- 🧠 **Context-Aware Scaffolding (`.fpc.json`)**: Remembers your project choices so you don't have to repeat flags!
-- 🔄 **State Management Support**: Provider, BLoC, GetX, Riverpod, MobX.
-- 📦 **Smart & Dynamic Code Generation**: Generates controllers, views, models, services, and interfaces with **dynamic imports** based on your database/HTTP preferences (e.g., auto-injects Hive or Firestore annotations).
-- 🎯 **Headless Mode**: Fully automate project scaffolding without interactive prompts using CLI flags.
-- 🚀 **Robust Dependency Injection**: Modifies `pubspec.yaml` natively using an AST parser (`ruamel.yaml`), preserving comments and indentation.
-- 💅 **Premium Terminal UI**: Beautiful progress spinners, colored logs, and interactive menus powered by `Rich`.
+## 🌟 Why FPC?
+
+Most CLI tools generate generic code. FPC is different because it is **Context-Aware**:
+- **It remembers your stack**: Through a `.fpc.json` file, FPC knows if your project uses BLoC, Riverpod, or GetX. You don't need to pass flags every time you generate a file.
+- **Dynamic Boilerplate**: If you use Hive, your generated models automatically include `@HiveType`. If you use Clean Architecture, your repositories automatically include `NetworkInfo` and `Either` error handling.
+- **Automatic Testing**: Every file generated in `lib/` automatically creates its twin in `test/`, following best practices for Unit and Widget testing.
 
 ---
 
 ## 💻 Installation
 
 ### Prerequisites
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) installed and in your `PATH`.
+- [Python 3.8+](https://www.python.org/) installed.
 
-- Flutter SDK installed and in your `PATH`
-- Python 3.7 or higher
-
-### Fresh Install (From Source)
-
+### Setup
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd fpc
 
-# Install the package globally in developer mode
+# Install globally in editable mode (recommended for developers)
 python3 -m pip install -e .
 ```
 
-After installation, the `fpc` command will be available globally in your terminal.
+---
 
-### Updating the CLI
+## 🛠️ Usage Guide
 
-When new updates are pushed to the repository, you can update your local FPC instance by pulling the latest changes and upgrading the dependencies:
-
+### 1. Health Check
+Before starting, ensure your environment is ready:
 ```bash
-cd /path/to/fpc
-git pull origin main
-python3 -m pip install --upgrade -e .
+fpc doctor
 ```
+The "Doctor" will check if Flutter, Git, and Python are correctly configured and if you are inside an FPC project.
+
+### 2. Creating or Initializing a Project
+- **New Project:** `fpc create -n my_app` (Starts an interactive wizard).
+- **Existing Project:** `fpc init` (Adds FPC intelligence to any Flutter project).
+
+### 3. Smart Code Generation
+FPC uses the project configuration to generate the right code for your specific stack.
+
+| Command | Description |
+|---------|-------------|
+| `fpc gen feature <name>` | Scaffolds a complete module (Data, Domain, Presentation) |
+| `fpc gen view <path>` | Creates a Widget (Stateless/Stateful/Observer/Consumer) |
+| `fpc gen ctrl <path>` | Creates a Controller or ViewModel with DI support |
+| `fpc gen model <path>` | Creates a Model with JSON serialization and DB annotations |
+| `fpc gen service <path>`| Creates a DataSource (Local or Remote) |
+
+### 4. Workflow Shortcuts (Aliases)
+Save time with built-in aliases for common Flutter operations:
+- `fpc get` → `flutter pub get`
+- `fpc build` → Runs `build_runner build`
+- `fpc watch` → Runs `build_runner watch`
+- `fpc clean` → `flutter clean`
+- `fpc upgrade` → `flutter pub upgrade`
 
 ---
 
-## 🛠 Usage
+## 🏗️ Supported Architectures
 
-### 1. Create a New Project
+### Clean Architecture (Enterprise)
+Focuses on separation of concerns and testability.
+- **Data Layer**: DataSources (Local/Remote), Models, and Repository Implementations.
+- **Domain Layer**: Entities, Repository Contracts, and UseCases.
+- **Presentation Layer**: Pages, Widgets, and State Management (BLoC/Provider/etc).
 
-**Interactive Mode:**
-```bash
-fpc create -n my_app -p /path/to/output
-```
-This launches a beautiful interactive UI that prompts you to select:
-- Architecture pattern (MVC, MVVM, Clean Architecture)
-- State management solution (Provider, BLoC, GetX, Riverpod, MobX, None)
-- HTTP client (Dio, http, None)
-- Local database (SQLite, Hive, Isar, ObjectBox, None)
-- Backend-as-a-Service (Firebase, Supabase, Appwrite, None)
+### MVVM (Model-View-ViewModel)
+Ideal for reactive applications.
+- Includes a dedicated `repositories` layer and constructor-based DI for ViewModels.
 
-**Headless Mode (CI/CD / Automation):**
-You can bypass the interactive menus by passing all arguments directly:
-```bash
-fpc create -n my_app -p ~/projects --arch mvc --state bloc --db hive --http dio --baas firebase
-```
-*Note: Run `fpc create --help` to see all available headless choices.*
-
-> **What happens under the hood?**
-> A hidden `.fpc.json` file is generated at the root of your newly created Flutter project. This acts as the project's brain!
+### MVC (Model-View-Controller)
+Classic and straightforward.
+- Updated with Repository patterns to avoid fat controllers.
 
 ---
 
-### 2. Generate Context-Aware Files
+## 🧪 Testing Strategy
 
-Because of the `.fpc.json` configuration, running commands inside your project folder no longer requires explicitly mentioning the state management. The CLI knows your project!
-
-```bash
-# General syntax
-fpc gen <type> <path>
-```
-
-#### Generate Controllers & Views
-
-```bash
-# Automatically pulls your default State Management from .fpc.json
-fpc gen ctrl lib/controllers/auth_controller
-
-fpc gen view lib/views/auth_view
-```
-*(If the project is BLoC, it generates `BlocBuilder`. If MobX, it wraps with `Observer`, etc.)*
-
-**Overriding the default:**
-You can still force a specific state management structure by using the `-s` or `--state` flag:
-```bash
-fpc gen view lib/features/settings/settings_view -s getx
-```
-
-#### Generate Smart Models
-Models are generated dynamically based on your HTTP and DB choices. For instance, if your project uses `Dio` and `Hive`, generating a model will automatically inject `@HiveType`!
-
-```bash
-fpc gen model lib/models/product
-```
-
-#### Generate Services and Interfaces
-```bash
-fpc gen service lib/services/api_service
-fpc gen intf lib/interfaces/repository
-```
+FPC enforces a "Test-First" culture.
+- **Location**: All tests are generated in the `test/` directory, mirroring the `lib/` structure.
+- **Unit Tests**: Generated for logic classes (Controllers, Services, Repositories).
+- **Widget Tests**: Generated for UI classes (Views).
+- **Mocking**: Templates include placeholders for `mockito` or `mocktail`.
 
 ---
 
-### 3. Add Generic Files (No State Management)
+## 🛠️ Developer Guide (Internal Architecture)
 
-For adding base structures without specific templates:
+FPC is built with a **Service-Oriented Architecture** in Python:
 
+- **`fpc/cli.py`**: The entry point. Handles command-line arguments.
+- **`fpc/config_manager.py`**: Manages the `.fpc.json` state.
+- **`fpc/template_manager.py`**: The "registry" that maps architectures and state managements to specific code templates.
+- **`fpc/project_manager.py`**: Orchestrates shell commands and Flutter SDK interactions.
+- **`fpc/generators/`**: Contains the logic for building folder structures and updating the `pubspec.yaml`.
+
+### How to add a new State Management or Template?
+1. **Create the Template**: Add a new python file in `fpc/templates/common/` (or a specific architecture folder) with a function `get_yourtype_template(name)`.
+2. **Register in TemplateManager**: Open `fpc/template_manager.py` and add your new template to the mapping logic in `get_template_content`.
+3. **Update CLI**: If it's a new state management solution, add it to the `choices` in `fpc/cli.py`.
+
+### Running Internal Tests
+To ensure you haven't broken the CLI logic:
 ```bash
-fpc add -t controller -d lib/controllers -n auth
-fpc add -t view -d lib/views -n home
+pip install pytest
+pytest tests/
 ```
 
 ---
-
-## 📋 File Type Aliases
-
-For writing commands faster, use abbreviations:
-- `ctrl` → `controller`
-- `intf` → `interface`
-
----
-
-## 🏗️ Project Structure Expectations
-
-The generated skeleton enforces clean boundaries:
-
-```text
-lib/
-├── main.dart
-├── config/              # Routes, Themes and BaaS initialization
-│   ├── app_config.dart
-│   ├── app_routes.dart
-│   └── app_theme.dart
-├── shared/              # Reusable design system / constants
-│   └── theme/
-├── controllers/         # (Depends on MVC vs MVVM vs Clean Arch)
-├── views/
-├── models/
-└── ...
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! If you're planning to submit a PR to add a new State Management or Architecture option, please remember to update the corresponding template generator functions inside `templates/` and update `generator.py` to respect the newly available headless flags.
 
 ## 📄 License
-
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
