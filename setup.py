@@ -10,7 +10,8 @@ setuptools.setup(
         ],
     },
     install_requires=[
-        # Add any Python dependencies here
+        'ruamel.yaml>=0.17.0',
+        'rich>=13.0.0',
     ],
     python_requires='>=3.7',
     author='JFriso Technologies',

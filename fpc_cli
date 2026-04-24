@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import os
 import sys
-import subprocess
 
+# Add the current directory to sys.path so we can find the fpc package
 script_dir = os.path.dirname(os.path.abspath(__file__))
-main_py = os.path.join(script_dir, 'main.py')
+sys.path.insert(0, script_dir)
 
-args = [sys.executable, main_py] + sys.argv[1:]
+from fpc.cli import main
 
-result = subprocess.run(args, cwd=script_dir)
-sys.exit(result.returncode)
+if __name__ == "__main__":
+    main()
