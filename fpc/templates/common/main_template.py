@@ -5,7 +5,7 @@ def get_main_file_content(preferences: dict) -> str:
     app_initialization_code = ''
     
     # BaaS setup code
-    baas = preferences['baas']
+    baas = preferences.get('baas', 'None')
     if baas == 'Firebase':
         setup_code += '''
 import 'package:firebase_core/firebase_core.dart';
@@ -58,7 +58,7 @@ Future<void> setupServices() async {
     state_management_setup = ''
     app_wrapper = 'AppWidget()'
     
-    state_management = preferences['state_management']
+    state_management = preferences.get('state_management', 'None')
     if state_management == 'Provider':
         state_management_setup = '''
 import 'package:provider/provider.dart';

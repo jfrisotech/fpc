@@ -1,5 +1,5 @@
 def get_home_view_content(preferences: dict) -> str:
-    if preferences['state_management'] == 'Provider':
+    if preferences.get('state_management', 'None') == 'Provider':
         return '''
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

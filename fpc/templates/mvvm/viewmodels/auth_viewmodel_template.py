@@ -1,5 +1,5 @@
 def get_auth_viewmodel_content(preferences: dict) -> str:
-    if preferences['state_management'] == 'Provider':
+    if preferences.get('state_management', 'None') == 'Provider':
         return '''
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';

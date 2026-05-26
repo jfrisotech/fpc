@@ -115,7 +115,7 @@ def _create_app_config_files(lib_path: str, preferences: dict):
             file.write(get_service_locator_content())
     
     # Create app_config.dart for BaaS configuration
-    baas = preferences['baas']
+    baas = preferences.get('baas', 'None')
     if baas != 'None':
         with open(os.path.join(config_path, 'app_config.dart'), 'w') as file:
             file.write(get_app_config_content(preferences))
