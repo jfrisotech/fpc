@@ -1,5 +1,6 @@
 def get_user_model_content(preferences: dict = None) -> str:
     imports = []
+    parts = []
     annotations = []
     
     if preferences:
@@ -8,11 +9,11 @@ def get_user_model_content(preferences: dict = None) -> str:
             
         if database == 'Hive':
             imports.append("import 'package:hive/hive.dart';")
-            imports.append("part 'user_model.g.dart';")
+            parts.append("part 'user_model.g.dart';")
             annotations.append("@HiveType(typeId: 0)")
         elif database == 'Isar':
             imports.append("import 'package:isar/isar.dart';")
-            imports.append("part 'user_model.g.dart';")
+            parts.append("part 'user_model.g.dart';")
             annotations.append("@collection")
             
         elif database == 'ObjectBox':
@@ -23,6 +24,7 @@ def get_user_model_content(preferences: dict = None) -> str:
             imports.append("import 'package:cloud_firestore/cloud_firestore.dart';")
 
     imports_str = '\n'.join(imports) + ('\n\n' if imports else '')
+    parts_str = '\n'.join(parts) + ('\n\n' if parts else '')
     annotations_str = '\n'.join(annotations) + ('\n' if annotations else '')
     
     db_id_field = ""
@@ -31,7 +33,7 @@ def get_user_model_content(preferences: dict = None) -> str:
     elif database == 'ObjectBox':
         db_id_field = "  @Id()\n  int localId = 0;\n"
 
-    return f'''{imports_str}{annotations_str}class UserModel {{
+    return f'''{imports_str}{parts_str}{annotations_str}class UserModel {{
 {db_id_field}  final String uid;
   final String name;
   final String email;

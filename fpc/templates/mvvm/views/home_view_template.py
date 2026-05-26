@@ -22,10 +22,9 @@ class HomeView extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () async {
+                  final navigator = Navigator.of(context);
                   await viewModel.logout();
-                  if (context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
+                  navigator.pushReplacementNamed('/login');
                 },
               ),
             ],
@@ -68,15 +67,15 @@ class _HomeViewState extends State<HomeView> {
             onPressed: _isLoading
                 ? null
                 : () async {
+                    final navigator = Navigator.of(context);
+                    
                     setState(() {
                       _isLoading = true;
                     });
                     
                     await _authViewModel.logout();
                     
-                    if (mounted) {
-                      Navigator.pushReplacementNamed(context, '/login');
-                    }
+                    navigator.pushReplacementNamed('/login');
                   },
           ),
         ],

@@ -13,18 +13,21 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
     os.makedirs(repositories_path, exist_ok=True)
 
     imports = []
+    parts = []
     annotations = []
+    database = None  # Bug #1 fix: always defined
+    baas = None
     if preferences:
         database = preferences.get('database')
         baas = preferences.get('baas')
             
         if database == 'Hive':
             imports.append("import 'package:hive/hive.dart';")
-            imports.append("part 'user_model.g.dart';")
+            parts.append("part 'user_model.g.dart';")
             annotations.append("@HiveType(typeId: 0)")
         elif database == 'Isar':
             imports.append("import 'package:isar/isar.dart';")
-            imports.append("part 'user_model.g.dart';")
+            parts.append("part 'user_model.g.dart';")
             annotations.append("@collection")
             
         elif database == 'ObjectBox':
@@ -35,6 +38,7 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
             imports.append("import 'package:cloud_firestore/cloud_firestore.dart';")
 
     imports_str = '\n'.join(imports) + ('\n' if imports else '')
+    parts_str = '\n'.join(parts) + ('\n' if parts else '')
     annotations_str = '\n'.join(annotations) + ('\n' if annotations else '')
 
     db_id_field = ""
@@ -47,6 +51,7 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
     with open(os.path.join(models_path, 'user_model.dart'), 'w') as file:
         file.write(f'''import '../../domain/entities/user.dart';
 {imports_str}
+{parts_str}
 {annotations_str}class UserModel extends User {{
 {db_id_field}  UserModel({{
     required super.uid,

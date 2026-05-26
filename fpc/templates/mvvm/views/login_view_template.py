@@ -86,13 +86,14 @@ class _LoginViewState extends State<LoginView> {
                         ? null
                         : () async {
                             if (_formKey.currentState!.validate()) {
+                              final navigator = Navigator.of(context);
                               final success = await viewModel.login(
                                 _emailController.text.trim(),
                                 _passwordController.text.trim(),
                               );
                               
-                              if (success && mounted) {
-                                Navigator.pushReplacementNamed(context, '/home');
+                              if (success) {
+                                navigator.pushReplacementNamed('/home');
                               }
                             }
                           },
@@ -156,15 +157,14 @@ class _LoginViewState extends State<LoginView> {
         _passwordController.text.trim(),
       );
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = _authViewModel.errorMessage;
-        });
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = _authViewModel.errorMessage;
+      });
 
-        if (success) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/home');
       }
     }
   }

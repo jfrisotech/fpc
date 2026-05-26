@@ -84,9 +84,8 @@ MultiBlocProvider(
       child: const AppWidget(),
     )'''
     elif state_management == 'GetX':
-        state_management_setup = '''
-import 'package:get/get.dart';
-'''
+        # GetX uses GetMaterialApp inside AppWidget — no top-level wrapper in main.dart
+        state_management_setup = ''
         app_wrapper = 'const AppWidget()'
     elif state_management == 'Riverpod':
         state_management_setup = '''
@@ -94,9 +93,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 '''
         app_wrapper = 'ProviderScope(child: const AppWidget())'
     elif state_management == 'MobX':
-        state_management_setup = '''
-import 'package:flutter_mobx/flutter_mobx.dart';
-'''
+        state_management_setup = ''
         app_wrapper = 'const AppWidget()'
     
     # DI initialization code

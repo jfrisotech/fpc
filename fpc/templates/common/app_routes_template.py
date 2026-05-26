@@ -7,16 +7,21 @@ def get_app_routes_content(preferences: dict = None) -> str:
         is_modular = preferences.get('folder_structure') == 'Modular (Feature First)'
 
     # Route prefix
+    # Route paths
     if is_modular:
         if is_clean:
-            relative_path = "../modules/auth/presentation/pages"
+            auth_relative_path = "../modules/auth/presentation/pages"
+            home_relative_path = "../modules/home/presentation/pages" # Future-proofing
         else:
-            relative_path = "../modules/auth/views"
+            auth_relative_path = "../modules/auth/views"
+            home_relative_path = "../modules/home/views"
     else:
         if is_clean:
-            relative_path = "../presentation/pages"
+            auth_relative_path = "../presentation/pages"
+            home_relative_path = "../presentation/pages"
         else:
-            relative_path = "../views"
+            auth_relative_path = "../views"
+            home_relative_path = "../views"
 
     # View names
     if is_clean:
@@ -27,14 +32,15 @@ def get_app_routes_content(preferences: dict = None) -> str:
     # We only have HomeView in MVC/MVVM templates for now
     has_home = not is_clean
     
-    home_import = f"import '{relative_path}/home_view.dart';" if has_home else ""
+    home_import = f"import '{home_relative_path}/home_view.dart';" if has_home else ""
     home_route = f"'/home': (context) => const HomeView()," if has_home else ""
-
+    
     login_file_name = "login_page.dart" if is_clean else "login_view.dart"
+    login_import = f"import '{auth_relative_path}/{login_file_name}';"
 
     return f'''import 'package:flutter/material.dart';
 {home_import}
-import '{relative_path}/{login_file_name}';
+{login_import}
 
 class AppRoutes {{
   static const String initialRoute = '/login';

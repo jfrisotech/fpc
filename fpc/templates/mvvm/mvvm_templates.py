@@ -4,16 +4,17 @@ from fpc.templates.mvvm.viewmodels.auth_viewmodel_template import get_auth_viewm
 from fpc.templates.mvvm.views.login_view_template import get_login_view_content
 from fpc.templates.mvvm.views.home_view_template import get_home_view_content
 
-def create_mvvm_templates(lib_path: str, preferences: dict):
+def create_mvvm_templates(auth_path: str, home_path: str, preferences: dict):
     """Create template files for MVVM architecture."""
-    model_path = os.path.join(lib_path, 'models')
-    viewmodel_path = os.path.join(lib_path, 'viewmodels')
-    view_path = os.path.join(lib_path, 'views')
-    service_path = os.path.join(lib_path, 'services')
+    # Auth module files
+    model_path = os.path.join(auth_path, 'models')
+    viewmodel_path = os.path.join(auth_path, 'viewmodels')
+    auth_view_path = os.path.join(auth_path, 'views')
+    service_path = os.path.join(auth_path, 'services')
     
     os.makedirs(model_path, exist_ok=True)
     os.makedirs(viewmodel_path, exist_ok=True)
-    os.makedirs(view_path, exist_ok=True)
+    os.makedirs(auth_view_path, exist_ok=True)
     os.makedirs(service_path, exist_ok=True)
     
     with open(os.path.join(model_path, 'user_model.dart'), 'w') as file:
@@ -27,8 +28,12 @@ def create_mvvm_templates(lib_path: str, preferences: dict):
         from fpc.templates.mvc.services.auth_service_template import get_auth_service_content
         file.write(get_auth_service_content())
 
-    with open(os.path.join(view_path, 'login_view.dart'), 'w') as file:
+    with open(os.path.join(auth_view_path, 'login_view.dart'), 'w') as file:
         file.write(get_login_view_content(preferences))
 
-    with open(os.path.join(view_path, 'home_view.dart'), 'w') as file:
+    # Home module files
+    home_view_path = os.path.join(home_path, 'views')
+    os.makedirs(home_view_path, exist_ok=True)
+    
+    with open(os.path.join(home_view_path, 'home_view.dart'), 'w') as file:
         file.write(get_home_view_content(preferences))
