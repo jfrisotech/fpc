@@ -29,16 +29,24 @@ class TestTemplateManager:
 
     def test_get_template_content_fallback_to_generic(self, template_manager):
         """Test fallback to generic when SM-specific fails or is missing."""
-        with patch('builtins.__import__') as mock_import:
-            # First call (SM-specific) raises ImportError
-            # Second call (Generic) returns module
-            mock_module = MagicMock()
-            mock_module.get_controller_template.return_value = "fallback_content"
-            
-            mock_import.side_effect = [ImportError(), mock_module]
-            
+        import importlib as _importlib  # pre-import before patching to avoid recursion
+
+        mock_module = MagicMock()
+        mock_module.get_controller_template.return_value = "fallback_content"
+
+        def selective_import(name, *args, **kwargs):
+            # Only intercept the FPC template module imports; let stdlib through
+            if name.startswith('fpc.templates'):
+                if 'unknownsm' in name.lower() or 'none' in name.lower():
+                    raise ImportError(f"No module named '{name}'")
+                return mock_module
+            # Use pre-imported importlib (not re-imported) to avoid recursion
+            return _importlib.import_module(name)
+
+        with patch('builtins.__import__', side_effect=selective_import):
             content = template_manager.get_template_content('controller', 'Auth', 'UnknownSM')
             assert content == "fallback_content"
+
 
     def test_get_template_content_viewmodel_fallback(self, template_manager):
         """Test that viewmodel falls back to controller templates if specific vm template is missing."""

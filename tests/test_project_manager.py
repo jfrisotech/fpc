@@ -1,4 +1,5 @@
 import pytest
+import subprocess
 from unittest.mock import patch, MagicMock
 from fpc.project_manager import ProjectManager
 
@@ -7,8 +8,9 @@ class TestProjectManager:
     def project_manager(self):
         return ProjectManager()
 
-    @patch('subprocess.run')
-    def test_run_flutter_command_success(self, mock_run, project_manager):
+    @patch('fpc.project_manager._find_flutter', return_value='flutter')
+    @patch('fpc.project_manager.subprocess.run')
+    def test_run_flutter_command_success(self, mock_run, mock_find, project_manager):
         """Test successful execution of a flutter command."""
         mock_run.return_value = MagicMock(returncode=0)
         
@@ -19,10 +21,11 @@ class TestProjectManager:
         args = mock_run.call_args[0][0]
         assert args == ['flutter', 'pub', 'get']
 
-    @patch('subprocess.run')
-    def test_run_flutter_command_failure(self, mock_run, project_manager):
+    @patch('fpc.project_manager._find_flutter', return_value='flutter')
+    @patch('fpc.project_manager.subprocess.run')
+    def test_run_flutter_command_failure(self, mock_run, mock_find, project_manager):
         """Test failure of a flutter command."""
-        mock_run.side_effect = Exception("Command failed")
+        mock_run.side_effect = subprocess.CalledProcessError(1, 'flutter', stderr='fail')
         
         success = project_manager.run_flutter_command('/root', ['pub', 'get'])
         

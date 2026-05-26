@@ -1,9 +1,48 @@
 import subprocess
 import sys
 import os
+import shutil
 from typing import List, Optional
 from .core.utils import print_color, Colors
 from rich.console import Console
+
+
+def _find_flutter() -> str:
+    """Resolve the flutter binary, checking common macOS/Linux install locations."""
+    # 1. Check PATH via shutil.which (works in most cases)
+    found = shutil.which('flutter')
+    if found:
+        return found
+    # 2. Common manual install locations
+    candidates = [
+        os.path.expanduser('~/development/flutter/bin/flutter'),
+        os.path.expanduser('~/flutter/bin/flutter'),
+        '/usr/local/bin/flutter',
+        '/opt/homebrew/bin/flutter',
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return 'flutter'  # fall back — will raise FileNotFoundError with a clear message
+
+
+def _flutter_env() -> dict:
+    """Return os.environ extended with Flutter and Dart SDK in PATH."""
+    flutter_bin = _find_flutter()
+    flutter_bin_dir = os.path.dirname(os.path.abspath(flutter_bin))
+    # Flutter ships its own Dart SDK at flutter/bin/cache/dart-sdk/bin
+    flutter_root = os.path.dirname(flutter_bin_dir)  # parent of bin/
+    dart_sdk_bin = os.path.join(flutter_root, 'bin', 'cache', 'dart-sdk', 'bin')
+
+    env = os.environ.copy()
+    extra = [flutter_bin_dir]
+    if os.path.isdir(dart_sdk_bin):
+        extra.append(dart_sdk_bin)
+    for p in reversed(extra):
+        if p not in env.get('PATH', ''):
+            env['PATH'] = p + os.pathsep + env.get('PATH', '')
+    return env
+
 
 class ProjectManager:
     """Handles Flutter-specific project operations."""
@@ -15,22 +54,26 @@ class ProjectManager:
         """Execute a generic Flutter command."""
         if not status_message:
             status_message = f"Running 'flutter {' '.join(command_args)}'..."
-            
+
+        flutter_bin = _find_flutter()
+        env = _flutter_env()
+
         try:
             with self.console.status(f"[bold blue]{status_message}[/bold blue]", spinner="dots"):
-                result = subprocess.run(
-                    ['flutter'] + command_args,
+                subprocess.run(
+                    [flutter_bin] + command_args,
                     cwd=project_path,
                     check=True,
                     capture_output=True,
-                    text=True
+                    text=True,
+                    env=env,
                 )
             return True
         except subprocess.CalledProcessError as e:
             print_color(f"Error running flutter command: {e.stderr}", Colors.RED)
             return False
         except FileNotFoundError:
-            print_color("Flutter command not found. Make sure Flutter is installed and in your PATH.", Colors.RED)
+            print_color(f"Flutter not found at '{flutter_bin}'. Make sure Flutter is installed and in your PATH.", Colors.RED)
             return False
 
     def create_project(self, project_name: str, output_dir: str) -> Optional[str]:

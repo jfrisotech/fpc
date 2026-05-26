@@ -1,18 +1,19 @@
 def get_auth_controller_content() -> str:
     return '''
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class AuthController {
   final AuthService _authService;
   
-  AuthController(this._authService);
+  AuthController([AuthService? authService]) : _authService = authService ?? AuthService();
   
   Future<UserModel?> login(String email, String password) async {
     try {
       return await _authService.login(email, password);
     } catch (e) {
-      print('Login error: $e');
+      debugPrint('Login error: $e');
       return null;
     }
   }
@@ -21,7 +22,7 @@ class AuthController {
     try {
       return await _authService.register(name, email, password);
     } catch (e) {
-      print('Registration error: $e');
+      debugPrint('Registration error: $e');
       return false;
     }
   }
@@ -30,7 +31,7 @@ class AuthController {
     try {
       await _authService.logout();
     } catch (e) {
-      print('Logout error: $e');
+      debugPrint('Logout error: $e');
     }
   }
 }
