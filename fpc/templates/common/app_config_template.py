@@ -1,5 +1,5 @@
 def get_app_config_content(preferences: dict) -> str:
-    baas = preferences['baas']
+    baas = preferences.get('baas', 'None')
     config_content = '''
 class AppConfig {
 '''

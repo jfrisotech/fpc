@@ -12,8 +12,11 @@ def create_clean_architecture_presentation(lib_path: str, preferences: dict = No
     
     state_management = preferences.get('state_management') if preferences else 'None'
     
-    core_prefix = '../../../../core' if preferences and preferences.get('folder_structure') == 'Modular (Feature First)' else '../../core'
-    
+    # Base core prefix for pages/widgets (1 level deep in presentation)
+    # But wait, we should just calculate specific prefixes per state management if they are nested deeper.
+    # Actually, BLoC is nested in bloc/auth (2 levels deep in presentation).
+    # Pages are nested in pages (1 level deep).
+    core_prefix = '../../../../../core' if preferences and preferences.get('folder_structure') == 'Modular (Feature First)' else '../../../core'
     if state_management == 'BLoC':
         _create_bloc_presentation(presentation_path, pages_path, core_prefix)
     elif state_management == 'MobX':
@@ -164,9 +167,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,7 +198,8 @@ def _create_mobx_presentation(presentation_path, pages_path):
     os.makedirs(store_path, exist_ok=True)
     
     with open(os.path.join(store_path, 'auth_store.dart'), 'w') as file:
-        file.write("""import 'package:mobx/mobx.dart';
+        file.write("""// ignore_for_file: library_private_types_in_public_api
+import 'package:mobx/mobx.dart';
 import '../../../domain/usecases/login_usecase.dart';
 
 part 'auth_store.g.dart';
@@ -216,7 +217,7 @@ abstract class _AuthStoreBase with Store {
   @action
   Future<void> login(String email, String password) async {
     isLoading = true;
-    final result = await loginUseCase(LoginParams(email: email, password: password));
+    await loginUseCase(LoginParams(email: email, password: password));
     isLoading = false;
   }
 }
@@ -272,7 +273,7 @@ class AuthController extends GetxController {
 
   Future<void> login(String email, String password) async {
     isLoading.value = true;
-    final result = await loginUseCase(LoginParams(email: email, password: password));
+    await loginUseCase(LoginParams(email: email, password: password));
     isLoading.value = false;
   }
 }
@@ -320,17 +321,22 @@ class AuthState {
    AuthState({this.isLoading = false, this.user});
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
+class AuthNotifier extends Notifier<AuthState> {
   final LoginUseCase loginUseCase;
 
-  AuthNotifier(this.loginUseCase) : super(AuthState());
+  AuthNotifier(this.loginUseCase);
+
+  @override
+  AuthState build() {
+    return AuthState();
+  }
 
   Future<void> login(String email, String password) async {
     state = AuthState(isLoading: true);
     final result = await loginUseCase(LoginParams(email: email, password: password));
     result.fold(
-      (l) => state = AuthState(isLoading: false),
-      (r) => state = AuthState(isLoading: false, user: r),
+      (failure) => state = AuthState(isLoading: false),
+      (user) => state = AuthState(isLoading: false, user: user),
     );
   }
 }
@@ -377,7 +383,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login(String email, String password) async {
     isLoading = true;
     notifyListeners();
-    final result = await loginUseCase(LoginParams(email: email, password: password));
+    await loginUseCase(LoginParams(email: email, password: password));
     isLoading = false;
     notifyListeners();
   }

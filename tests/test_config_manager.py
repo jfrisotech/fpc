@@ -12,8 +12,9 @@ class TestConfigManager:
     def test_find_project_root_success(self, config_manager):
         """Test finding project root when pubspec.yaml exists."""
         with patch('os.path.exists') as mock_exists:
-            # Mock exists to return True only for a specific path
-            mock_exists.side_effect = lambda p: 'pubspec.yaml' in p
+            # Only return True for the exact pubspec.yaml at the project root level.
+            # This prevents the walker from stopping at an intermediate directory.
+            mock_exists.side_effect = lambda p: p == '/home/user/project/pubspec.yaml'
             
             root = config_manager.find_project_root('/home/user/project/lib/src')
             assert root == '/home/user/project'

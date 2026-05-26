@@ -1,6 +1,8 @@
 import os
+import shutil
 import subprocess
 from fpc.core.utils import print_color, Colors
+from fpc.project_manager import _find_flutter, _flutter_env
 from rich.console import Console
 
 def update_pubspec(project_path: str, preferences: dict):
@@ -68,33 +70,40 @@ def update_pubspec(project_path: str, preferences: dict):
     elif baas == 'Appwrite':
         deps_to_fetch.add('appwrite')
     
-    # Common utility dependencies
-    if architecture == 'Clean Architecture' or state_management in ['BLoC', 'MobX', 'None']:
-        deps_to_fetch.add('get_it')
-        
-    deps_to_fetch.add('path')
+    # Common utility dependencies (always added)
+    deps_to_fetch.add('logger')          # Bug #3 fix: logger is a runtime dep
     deps_to_fetch.add('shared_preferences')
     deps_to_fetch.add('intl')
-    dev_deps_to_fetch.add('logger')
+    # Bug #8 fix: 'path' only needed when dealing with local file paths (DB)
+    if database in ['SQLite (sqflite)', 'Hive', 'Isar', 'ObjectBox']:
+        deps_to_fetch.add('path')
+    # Bug #2 fix: get_it for DI — used by Clean Arch always, and by BLoC/MobX/Provider/None
+    # Riverpod has its own DI via ProviderScope, GetX uses Get.put/find
+    if architecture == 'Clean Architecture' or state_management in ['Provider', 'BLoC', 'MobX', 'None']:
+        deps_to_fetch.add('get_it')
 
     # Dev dependencies for build_runner
     if state_management == 'MobX' or database in ['Hive', 'Isar', 'ObjectBox']:
         dev_deps_to_fetch.add('build_runner')
-        
+
+    flutter_bin = _find_flutter()
+    env = _flutter_env()
+
     console = Console()
     with console.status("[bold blue]Resolving and injecting compatible packages via flutter pub add...[/bold blue]", spinner="dots"):
         all_deps = list(deps_to_fetch) + [f"dev:{pkg}" for pkg in dev_deps_to_fetch]
-        
+
         if all_deps:
             try:
                 subprocess.run(
-                    ['flutter', 'pub', 'add'] + all_deps,
+                    [flutter_bin, 'pub', 'add'] + all_deps,
                     cwd=project_path,
                     check=True,
                     capture_output=True,
-                    text=True
+                    text=True,
+                    env=env,
                 )
             except subprocess.CalledProcessError as e:
                 print_color(f"Error resolving dependencies: {e.stderr}", Colors.RED)
-                
+
     print_color("pubspec.yaml updated with compatible versions successfully!", Colors.GREEN)

@@ -5,7 +5,7 @@ def get_main_file_content(preferences: dict) -> str:
     app_initialization_code = ''
     
     # BaaS setup code
-    baas = preferences['baas']
+    baas = preferences.get('baas', 'None')
     if baas == 'Firebase':
         setup_code += '''
 import 'package:firebase_core/firebase_core.dart';
@@ -58,7 +58,7 @@ Future<void> setupServices() async {
     state_management_setup = ''
     app_wrapper = 'AppWidget()'
     
-    state_management = preferences['state_management']
+    state_management = preferences.get('state_management', 'None')
     if state_management == 'Provider':
         state_management_setup = '''
 import 'package:provider/provider.dart';
@@ -84,9 +84,8 @@ MultiBlocProvider(
       child: const AppWidget(),
     )'''
     elif state_management == 'GetX':
-        state_management_setup = '''
-import 'package:get/get.dart';
-'''
+        # GetX uses GetMaterialApp inside AppWidget — no top-level wrapper in main.dart
+        state_management_setup = ''
         app_wrapper = 'const AppWidget()'
     elif state_management == 'Riverpod':
         state_management_setup = '''
@@ -94,9 +93,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 '''
         app_wrapper = 'ProviderScope(child: const AppWidget())'
     elif state_management == 'MobX':
-        state_management_setup = '''
-import 'package:flutter_mobx/flutter_mobx.dart';
-'''
+        state_management_setup = ''
         app_wrapper = 'const AppWidget()'
     
     # DI initialization code

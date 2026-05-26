@@ -1,5 +1,5 @@
 def get_auth_viewmodel_content(preferences: dict) -> str:
-    if preferences['state_management'] == 'Provider':
+    if preferences.get('state_management', 'None') == 'Provider':
         return '''
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
@@ -8,7 +8,7 @@ import '../services/auth_service.dart';
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService;
   
-  AuthViewModel(this._authService);
+  AuthViewModel([AuthService? authService]) : _authService = authService ?? AuthService();
   
   UserModel? _user;
   bool _isLoading = false;
@@ -79,7 +79,7 @@ import '../services/auth_service.dart';
 class AuthViewModel {
   final AuthService _authService;
   
-  AuthViewModel(this._authService);
+  AuthViewModel([AuthService? authService]) : _authService = authService ?? AuthService();
   
   UserModel? _user;
   bool _isLoading = false;
@@ -90,12 +90,24 @@ class AuthViewModel {
   String? get errorMessage => _errorMessage;
   
   Future<bool> login(String email, String password) async {
-    // Implementation for other state management
-    return true;
+    _isLoading = true;
+    _errorMessage = null;
+    try {
+      _user = await _authService.login(email, password);
+      _isLoading = false;
+      return _user != null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      return false;
+    }
   }
   
   Future<void> logout() async {
-    // Implementation for other state management
+    _isLoading = true;
+    await _authService.logout();
+    _user = null;
+    _isLoading = false;
   }
 }
 '''

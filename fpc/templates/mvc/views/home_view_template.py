@@ -1,12 +1,8 @@
 def get_home_view_content() -> str:
-    return '''
-import 'package:flutter/material.dart';
-import '../controllers/auth_controller.dart';
+    return '''import 'package:flutter/material.dart';
 
 class HomeView extends StatelessWidget {
-  HomeView({super.key});
-
-  final AuthController _authController = AuthController();
+  const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +13,9 @@ class HomeView extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await _authController.logout();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
+              // TODO: Call your AuthController/AuthService logout method here
+              // Example (GetIt): sl<AuthController>().logout();
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
