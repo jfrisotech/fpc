@@ -250,9 +250,23 @@ class FlutterGenerator:
     def _generate_feature(self, directory: str, name: str, state_management: Optional[str]):
         """Generate a complete feature based on the project's architecture."""
         feature_name = to_snake_case(name)
-        feature_dir = os.path.join(directory, feature_name)
         
+        project_root = self.config_manager.find_project_root(directory)
         preferences = self.config_manager.get_config(directory)
+        folder_structure = preferences.get('folder_structure', 'Standard (Layer First)')
+        
+        if project_root and folder_structure == 'Modular (Feature First)':
+            modules_dir = os.path.join(project_root, 'lib', 'app', 'modules')
+            abs_dir = os.path.abspath(directory)
+            abs_modules = os.path.abspath(modules_dir)
+            if abs_dir == abs_modules or abs_dir.startswith(abs_modules + os.sep):
+                target_dir = directory
+            else:
+                target_dir = modules_dir
+        else:
+            target_dir = directory
+            
+        feature_dir = os.path.join(target_dir, feature_name)
         architecture = preferences.get('architecture', '')
         
         os.makedirs(feature_dir, exist_ok=True)
