@@ -59,3 +59,54 @@ class TestTemplateManager:
             
             content = template_manager.get_template_content('viewmodel', 'Auth', 'None')
             assert content == "vm_fallback_content"
+
+    def test_suffix_prevention_getx(self, template_manager):
+        """Test that GetX templates do not double-suffix class names or imports."""
+        from fpc.templates.getx.controller_template import get_getx_controller_template
+        from fpc.templates.getx.view_template import get_getx_view_template
+        
+        # Test controller class name
+        content_ctrl = get_getx_controller_template('DocumentsController')
+        assert "class DocumentsController extends GetxController" in content_ctrl
+        assert "DocumentsControllerController" not in content_ctrl
+        
+        # Test view class name and imports
+        content_view = get_getx_view_template('DocumentsView', 'documents')
+        assert "class DocumentsView extends GetView<DocumentsController>" in content_view
+        assert "DocumentsViewView" not in content_view
+        assert "import '../controllers/documents_controller.dart';" in content_view
+
+    def test_suffix_prevention_provider(self, template_manager):
+        """Test that Provider templates do not double-suffix class names or imports."""
+        from fpc.templates.provider.controller_template import get_provider_controller_template
+        from fpc.templates.provider.view_template import get_provider_view_template
+        
+        # Test controller class name
+        content_ctrl = get_provider_controller_template('DocumentsController')
+        assert "class DocumentsController extends ChangeNotifier" in content_ctrl
+        assert "DocumentsControllerController" not in content_ctrl
+        
+        # Test view class name and imports
+        content_view = get_provider_view_template('DocumentsView', 'documents')
+        assert "class DocumentsView extends StatelessWidget" in content_view
+        assert "DocumentsViewView" not in content_view
+        assert "import '../controllers/documents_controller.dart';" in content_view
+        assert "ChangeNotifierProvider(\n      create: (_) => DocumentsController()," in content_view
+
+    def test_suffix_prevention_bloc(self, template_manager):
+        """Test that BLoC templates do not double-suffix class names or imports."""
+        from fpc.templates.bloc.controller_template import get_bloc_controller_template
+        from fpc.templates.bloc.view_template import get_bloc_view_template
+        
+        # Test controller class name and events/states
+        content_ctrl = get_bloc_controller_template('DocumentsController')
+        assert "class DocumentsBloc extends Bloc<DocumentsEvent, DocumentsState>" in content_ctrl
+        assert "DocumentsControllerBloc" not in content_ctrl
+        assert "abstract class DocumentsEvent" in content_ctrl
+        
+        # Test view class name and imports
+        content_view = get_bloc_view_template('DocumentsView', 'documents')
+        assert "class DocumentsView extends StatelessWidget" in content_view
+        assert "DocumentsViewView" not in content_view
+        assert "import '../controllers/documents_controller.dart';" in content_view
+        assert "BlocProvider(\n      create: (context) => DocumentsBloc()," in content_view

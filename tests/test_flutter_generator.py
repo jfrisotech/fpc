@@ -61,3 +61,20 @@ class TestFlutterGenerator:
             
             # Verify individual files were generated
             assert mock_gen_file.call_count >= 4 # controller, view, service, model
+
+    @patch('os.makedirs')
+    def test_generate_feature_modular_path(self, mock_makedirs, generator, mock_services):
+        """Test that feature generator routes to lib/app/modules/ in a modular project structure."""
+        mock_services['config'].get_config.return_value = {
+            'architecture': 'MVC (Model-View-Controller)',
+            'folder_structure': 'Modular (Feature First)',
+            'state_management': 'GetX'
+        }
+        mock_services['config'].find_project_root.return_value = '/project_root'
+        
+        with patch.object(generator, 'generate_file') as mock_gen_file:
+            generator._generate_feature('/project_root', 'documents', 'GetX')
+            
+            calls = [call[0][0] for call in mock_makedirs.call_args_list]
+            expected_prefix = os.path.join('/project_root', 'lib', 'app', 'modules', 'documents')
+            assert any(c.startswith(expected_prefix) for c in calls)
