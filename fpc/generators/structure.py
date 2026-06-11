@@ -26,12 +26,12 @@ def generate_project_structure(project_path: str, preferences: dict):
     
     # Create architecture-specific directories
     architecture = preferences.get('architecture', '')
+    state_management = preferences.get('state_management', 'None')
     if architecture == 'MVC (Model-View-Controller)':
-        _create_mvc_structure(arch_path)
+        _create_mvc_structure(arch_path, state_management)
     elif architecture == 'MVVM (Model-View-ViewModel)':
-        _create_mvvm_structure(arch_path)
+        _create_mvvm_structure(arch_path, state_management)
     elif architecture == 'Clean Architecture':
-        state_management = preferences.get('state_management', 'None')
         _create_clean_architecture_structure(arch_path, app_path, state_management)
     
     print_color("Project structure generated successfully!", Colors.GREEN)
@@ -42,27 +42,33 @@ def _create_directories(base_path: str, directories: list):
         dir_path = os.path.join(base_path, directory)
         os.makedirs(dir_path, exist_ok=True)
 
-def _create_mvc_structure(arch_path: str):
+def _create_mvc_structure(arch_path: str, state_management: str = 'None'):
     """Create MVC architecture structure."""
-    _create_directories(arch_path, [
+    dirs = [
         'models',
         'views',
         'controllers',
         'repositories',
         'services',
         'widgets',
-    ])
+    ]
+    if 'getx' in state_management.lower():
+        dirs.append('bindings')
+    _create_directories(arch_path, dirs)
 
-def _create_mvvm_structure(arch_path: str):
+def _create_mvvm_structure(arch_path: str, state_management: str = 'None'):
     """Create MVVM architecture structure."""
-    _create_directories(arch_path, [
+    dirs = [
         'models',
         'views',
         'viewmodels',
         'repositories',
         'services',
         'widgets',
-    ])
+    ]
+    if 'getx' in state_management.lower():
+        dirs.append('bindings')
+    _create_directories(arch_path, dirs)
 
 def _create_clean_architecture_structure(arch_path: str, lib_path: str, state_management: str):
     """Create Clean Architecture structure."""
@@ -97,6 +103,8 @@ def _create_clean_architecture_structure(arch_path: str, lib_path: str, state_ma
     ]
     if state_folder:
         presentation_dirs.append(f'presentation/{state_folder}')
+    if 'getx' in sm_lower:
+        presentation_dirs.append('presentation/bindings')
 
     _create_directories(arch_path, [
         'data',

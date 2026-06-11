@@ -166,7 +166,8 @@ class FlutterGenerator:
             'model': 'model',
             'interface': 'interface',
             'repository': 'repository',
-            'repository_impl': 'repository_impl'
+            'repository_impl': 'repository_impl',
+            'binding': 'binding'
         }
         
         if file_type == 'feature':
@@ -196,7 +197,7 @@ class FlutterGenerator:
 
         os.makedirs(directory, exist_ok=True)
         
-        content = self.template_manager.get_template_content(actual_type, base_name, state_management)
+        content = self.template_manager.get_template_content(actual_type, base_name, state_management, preferences)
         
         with open(file_path, 'w') as f:
             f.write(content)
@@ -303,6 +304,10 @@ class FlutterGenerator:
             # Generate files in their places
             self.generate_file('controller', os.path.join(presentation_dir, state_folder), feature_name, state_management)
             self.generate_file('view', pages_dir, feature_name, state_management)
+            if 'getx' in sm:
+                bindings_dir = os.path.join(presentation_dir, 'bindings')
+                os.makedirs(bindings_dir, exist_ok=True)
+                self.generate_file('binding', bindings_dir, feature_name, state_management)
             self.generate_file('service', os.path.join(data_dir, 'datasources', 'remote'), feature_name, state_management)
             self.generate_file('model', os.path.join(data_dir, 'models'), feature_name, state_management)
             self.generate_file('repository_impl', os.path.join(data_dir, 'repositories'), feature_name, state_management)
@@ -326,6 +331,11 @@ class FlutterGenerator:
             
             self.generate_file(ctrl_type, ctrl_dir, feature_name, state_management)
             self.generate_file('view', view_dir, feature_name, state_management)
+            sm = (state_management or preferences.get('state_management', 'none')).lower()
+            if 'getx' in sm:
+                bindings_dir = os.path.join(feature_dir, 'bindings')
+                os.makedirs(bindings_dir, exist_ok=True)
+                self.generate_file('binding', bindings_dir, feature_name, state_management)
             self.generate_file('service', service_dir, feature_name, state_management)
             self.generate_file('model', model_dir, feature_name, state_management)
             self.generate_file('repository', repo_dir, feature_name, state_management)

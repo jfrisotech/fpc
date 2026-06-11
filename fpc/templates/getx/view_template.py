@@ -17,9 +17,6 @@ class {view_class} extends GetView<{controller_class}> {{
 
   @override
   Widget build(BuildContext context) {{
-    // Ensure controller is put in memory if not already
-    Get.put({controller_class}());
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('{view_class}'),

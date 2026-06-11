@@ -138,8 +138,7 @@ void main() async {{
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       initialRoute: AppRoutes.initialRoute,
-      // Use GetPages or fallback to routes
-      routes: AppRoutes.routes,
+      getPages: AppRoutes.pages,
     );
 '''
 

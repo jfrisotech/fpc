@@ -6,7 +6,7 @@ class TemplateManager:
     """Manages template retrieval and generation."""
     
     @staticmethod
-    def get_template_content(file_type: str, name: str, state_management: Optional[str] = None) -> str:
+    def get_template_content(file_type: str, name: str, state_management: Optional[str] = None, preferences: Optional[dict] = None) -> str:
         """Fetch template content for a given type, name, and state management."""
         class_name = to_pascal_case(name)
         # Ensure suffix is present in class name (e.g. UserProfile + ViewModel)
@@ -37,6 +37,7 @@ class TemplateManager:
             'repository': 'fpc.templates.generic.repository_template',
             'repository_impl': 'fpc.templates.generic.repository_template', # Fallback to generic repo or specific impl
             'entity': 'fpc.templates.generic.entity_template',
+            'binding': 'fpc.templates.getx.binding_template', # Fallback to GetX binding template
         }
         
         # Mapping for SM-specific templates
@@ -62,7 +63,8 @@ class TemplateManager:
             'getx': {
                 'controller': 'fpc.templates.getx.controller_template',
                 'viewmodel': 'fpc.templates.getx.controller_template',
-                'view': 'fpc.templates.getx.view_template'
+                'view': 'fpc.templates.getx.view_template',
+                'binding': 'fpc.templates.getx.binding_template'
             },
             'riverpod': {
                 'controller': 'fpc.templates.riverpod.controller_template',
@@ -97,9 +99,12 @@ class TemplateManager:
                             break
                 
                 try:
-                    return getattr(module, func_name)(class_name, name)
-                except (TypeError, AttributeError):
-                    return getattr(module, func_name)(class_name)
+                    return getattr(module, func_name)(class_name, name, preferences=preferences)
+                except TypeError:
+                    try:
+                        return getattr(module, func_name)(class_name, name)
+                    except (TypeError, AttributeError):
+                        return getattr(module, func_name)(class_name)
             except (ImportError, AttributeError):
                 pass
         
@@ -114,9 +119,12 @@ class TemplateManager:
                     func_name = "get_controller_template"
                     
                 try:
-                    return getattr(module, func_name)(class_name, name)
-                except (ImportError, AttributeError, TypeError):
-                    return getattr(module, func_name)(class_name)
+                    return getattr(module, func_name)(class_name, name, preferences=preferences)
+                except TypeError:
+                    try:
+                        return getattr(module, func_name)(class_name, name)
+                    except (ImportError, AttributeError, TypeError):
+                        return getattr(module, func_name)(class_name)
             except (ImportError, AttributeError):
                 pass
                 
