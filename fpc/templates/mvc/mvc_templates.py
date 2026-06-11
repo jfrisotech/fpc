@@ -30,6 +30,24 @@ def create_mvc_templates(auth_path: str, home_path: str, preferences: dict):
     with open(os.path.join(auth_view_path, 'login_view.dart'), 'w') as file:
         file.write(get_login_view_content())
 
+    state_management = preferences.get('state_management', 'None')
+    if state_management == 'GetX':
+        binding_path = os.path.join(auth_path, 'bindings')
+        os.makedirs(binding_path, exist_ok=True)
+        with open(os.path.join(binding_path, 'auth_binding.dart'), 'w') as file:
+            file.write("""import 'package:get/get.dart';
+import '../controllers/auth_controller.dart';
+import '../services/auth_service.dart';
+
+class AuthBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AuthService>(() => AuthService());
+    Get.lazyPut<AuthController>(() => AuthController());
+  }
+}
+""")
+
     # Home module files
     home_view_path = os.path.join(home_path, 'views')
     os.makedirs(home_view_path, exist_ok=True)
