@@ -110,3 +110,13 @@ class TestTemplateManager:
         assert "DocumentsViewView" not in content_view
         assert "import '../controllers/documents_controller.dart';" in content_view
         assert "BlocProvider(\n      create: (context) => DocumentsBloc()," in content_view
+
+    def test_suffix_prevention_getx_binding(self, template_manager):
+        """Test that GetX Binding templates do not double-suffix class names or imports."""
+        from fpc.templates.getx.binding_template import get_getx_binding_template
+        
+        content = get_getx_binding_template('DocumentsBinding', 'documents')
+        assert "class DocumentsBinding extends Bindings" in content
+        assert "DocumentsBindingBinding" not in content
+        assert "import '../controllers/documents_controller.dart';" in content
+        assert "Get.lazyPut<DocumentsController>" in content

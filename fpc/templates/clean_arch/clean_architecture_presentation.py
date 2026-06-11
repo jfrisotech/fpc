@@ -258,7 +258,9 @@ class _LoginPageState extends State<LoginPage> {
 
 def _create_getx_presentation(presentation_path, pages_path):
     controllers_path = os.path.join(presentation_path, 'controllers', 'auth')
+    bindings_path = os.path.join(presentation_path, 'bindings', 'auth')
     os.makedirs(controllers_path, exist_ok=True)
+    os.makedirs(bindings_path, exist_ok=True)
     
     with open(os.path.join(controllers_path, 'auth_controller.dart'), 'w') as file:
         file.write("""import 'package:get/get.dart';
@@ -275,6 +277,21 @@ class AuthController extends GetxController {
     isLoading.value = true;
     await loginUseCase(LoginParams(email: email, password: password));
     isLoading.value = false;
+  }
+}
+""")
+
+    with open(os.path.join(bindings_path, 'auth_binding.dart'), 'w') as file:
+        file.write("""import 'package:get/get.dart';
+import '../../controllers/auth/auth_controller.dart';
+import '../../../domain/usecases/login_usecase.dart';
+
+class AuthBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AuthController>(
+      () => AuthController(Get.find<LoginUseCase>()),
+    );
   }
 }
 """)

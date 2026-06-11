@@ -34,7 +34,7 @@ class TestFlutterGenerator:
                     
                     # Verify template was requested
                     mock_services['template'].get_template_content.assert_called_with(
-                        'controller', 'auth', 'Provider'
+                        'controller', 'auth', 'Provider', {'state_management': 'Provider'}
                     )
                     
                     # Verify file was written
@@ -78,3 +78,21 @@ class TestFlutterGenerator:
             calls = [call[0][0] for call in mock_makedirs.call_args_list]
             expected_prefix = os.path.join('/project_root', 'lib', 'app', 'modules', 'documents')
             assert any(c.startswith(expected_prefix) for c in calls)
+
+    @patch('os.makedirs')
+    def test_generate_feature_getx(self, mock_makedirs, generator, mock_services):
+        """Test that feature generator generates a binding file when using GetX."""
+        mock_services['config'].get_config.return_value = {
+            'architecture': 'Clean Architecture',
+            'state_management': 'GetX'
+        }
+        
+        with patch.object(generator, 'generate_file') as mock_gen_file:
+            generator._generate_feature('/lib', 'home', 'GetX')
+            
+            # Verify bindings directory was created
+            calls = [call[0][0] for call in mock_makedirs.call_args_list]
+            assert any('bindings' in c for c in calls)
+            
+            # Verify binding file was generated
+            mock_gen_file.assert_any_call('binding', os.path.join('/lib', 'home', 'presentation', 'bindings'), 'home', 'GetX')
