@@ -38,12 +38,14 @@ class TemplateManager:
             'repository_impl': 'fpc.templates.generic.repository_template', # Fallback to generic repo or specific impl
             'entity': 'fpc.templates.generic.entity_template',
             'binding': 'fpc.templates.getx.binding_template', # Fallback to GetX binding template
+            'usecase': 'fpc.templates.clean_arch.usecase_template',
         }
         
         # Mapping for SM-specific templates
         sm_mapping = {
             'none': {
-                'repository_impl': 'fpc.templates.clean_arch.repository_impl_template'
+                'repository_impl': 'fpc.templates.clean_arch.repository_impl_template',
+                'usecase': 'fpc.templates.clean_arch.usecase_template',
             },
             'mobx': {
                 'controller': 'fpc.templates.mobx.controller_template',
@@ -59,6 +61,12 @@ class TemplateManager:
                 'controller': 'fpc.templates.bloc.controller_template',
                 'viewmodel': 'fpc.templates.bloc.controller_template',
                 'view': 'fpc.templates.bloc.view_template'
+            },
+            'cubit': {
+                'controller': 'fpc.templates.cubit.controller_template',
+                'viewmodel': 'fpc.templates.cubit.controller_template',
+                'cubit': 'fpc.templates.cubit.controller_template',
+                'view': 'fpc.templates.cubit.view_template'
             },
             'getx': {
                 'controller': 'fpc.templates.getx.controller_template',

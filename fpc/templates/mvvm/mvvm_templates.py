@@ -3,6 +3,7 @@ from fpc.templates.mvvm.models.user_model_template import get_user_model_content
 from fpc.templates.mvvm.viewmodels.auth_viewmodel_template import get_auth_viewmodel_content
 from fpc.templates.mvvm.views.login_view_template import get_login_view_content
 from fpc.templates.mvvm.views.home_view_template import get_home_view_content
+from fpc.templates.mvvm.views.splash_view_template import get_mvvm_splash_view_content
 
 def create_mvvm_templates(auth_path: str, home_path: str, preferences: dict):
     """Create template files for MVVM architecture."""
@@ -27,6 +28,9 @@ def create_mvvm_templates(auth_path: str, home_path: str, preferences: dict):
         # Reusing the MVC auth service since it is a pure dart class
         from fpc.templates.mvc.services.auth_service_template import get_auth_service_content
         file.write(get_auth_service_content())
+
+    with open(os.path.join(auth_view_path, 'splash_view.dart'), 'w') as file:
+        file.write(get_mvvm_splash_view_content(preferences))
 
     with open(os.path.join(auth_view_path, 'login_view.dart'), 'w') as file:
         file.write(get_login_view_content(preferences))

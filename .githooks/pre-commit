@@ -1,0 +1,27 @@
+#!/bin/sh
+# FPC Pre-Commit Git Hook
+# Ensures tests pass before allowing a commit.
+
+echo "🔍 Running FPC pre-commit checks..."
+
+# Run pytest on the test suite
+if command -v pytest >/dev/null 2>&1; then
+    pytest -q
+    PYTEST_RESULT=$?
+elif command -v python3 >/dev/null 2>&1; then
+    python3 -m pytest -q
+    PYTEST_RESULT=$?
+else
+    echo "⚠️  pytest not found in PATH, skipping automated test run."
+    exit 0
+fi
+
+if [ $PYTEST_RESULT -ne 0 ]; then
+    echo "❌ Pre-commit validation failed: pytest reported errors."
+    echo "Please fix the failing tests before committing."
+    exit 1
+fi
+
+echo "✅ Pre-commit validation passed!"
+exit 0
+

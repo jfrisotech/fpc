@@ -4,6 +4,7 @@ from fpc.templates.mvc.controllers.auth_controller_template import get_auth_cont
 from fpc.templates.mvc.services.auth_service_template import get_auth_service_content
 from fpc.templates.mvc.views.login_view_template import get_login_view_content
 from fpc.templates.mvc.views.home_view_template import get_home_view_content
+from fpc.templates.mvc.views.splash_view_template import get_splash_view_content
 
 def create_mvc_templates(auth_path: str, home_path: str, preferences: dict):
     """Create template files for MVC architecture."""
@@ -27,8 +28,11 @@ def create_mvc_templates(auth_path: str, home_path: str, preferences: dict):
     with open(os.path.join(service_path, 'auth_service.dart'), 'w') as file:
         file.write(get_auth_service_content())
 
+    with open(os.path.join(auth_view_path, 'splash_view.dart'), 'w') as file:
+        file.write(get_splash_view_content(preferences))
+
     with open(os.path.join(auth_view_path, 'login_view.dart'), 'w') as file:
-        file.write(get_login_view_content())
+        file.write(get_login_view_content(preferences))
 
     state_management = preferences.get('state_management', 'None')
     if state_management == 'GetX':
@@ -53,4 +57,4 @@ class AuthBinding extends Bindings {
     os.makedirs(home_view_path, exist_ok=True)
     
     with open(os.path.join(home_view_path, 'home_view.dart'), 'w') as file:
-        file.write(get_home_view_content())
+        file.write(get_home_view_content(preferences))

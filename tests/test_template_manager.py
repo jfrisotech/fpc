@@ -111,6 +111,31 @@ class TestTemplateManager:
         assert "import '../controllers/documents_controller.dart';" in content_view
         assert "BlocProvider(\n      create: (context) => DocumentsBloc()," in content_view
 
+    def test_suffix_prevention_cubit(self, template_manager):
+        """Test that Cubit templates do not double-suffix class names or imports."""
+        from fpc.templates.cubit.controller_template import get_cubit_controller_template
+        from fpc.templates.cubit.view_template import get_cubit_view_template
+
+        # Test controller class name and states
+        content_ctrl = get_cubit_controller_template('DocumentsController')
+        assert "class DocumentsCubit extends Cubit<DocumentsState>" in content_ctrl
+        assert "DocumentsControllerCubit" not in content_ctrl
+        assert "abstract class DocumentsState extends Equatable" in content_ctrl
+        assert "class DocumentsInitial extends DocumentsState" in content_ctrl
+
+        # Also test with ViewModel suffix
+        content_vm = get_cubit_controller_template('DocumentsViewModel')
+        assert "class DocumentsCubit extends Cubit<DocumentsState>" in content_vm
+        assert "DocumentsViewModelCubit" not in content_vm
+
+        # Test view class name and imports
+        content_view = get_cubit_view_template('DocumentsView', 'documents')
+        assert "class DocumentsView extends StatelessWidget" in content_view
+        assert "DocumentsViewView" not in content_view
+        assert "import '../controllers/documents_controller.dart';" in content_view
+        assert "BlocProvider(\n      create: (context) => DocumentsCubit()," in content_view
+        assert "BlocBuilder<DocumentsCubit, DocumentsState>" in content_view
+
     def test_suffix_prevention_getx_binding(self, template_manager):
         """Test that GetX Binding templates do not double-suffix class names or imports."""
         from fpc.templates.getx.binding_template import get_getx_binding_template

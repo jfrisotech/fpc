@@ -10,8 +10,13 @@ class {class_name} extends StatelessWidget {{
       appBar: AppBar(
         title: const Text('{class_name}'),
       ),
-      body: Center(
-        child: Text('This is the {class_name}.'),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Text('This is the {class_name}.'),
+          ),
+        ),
       ),
     );
   }}

@@ -39,7 +39,7 @@ class TestPubspecUpdater:
             'architecture': 'Clean Architecture',
             'state_management': 'BLoC',
             'http_client': 'Dio',
-            'database': 'Hive',
+            'database': 'Drift',
             'baas': 'None'
         }
 
@@ -55,8 +55,8 @@ class TestPubspecUpdater:
         assert 'dartz' in args          # Clean Arch
         assert 'flutter_bloc' in args   # BLoC
         assert 'dio' in args            # Dio
-        assert 'hive' in args           # Hive
-        assert 'dev:hive_generator' in args  # Hive dev dep
+        assert 'drift' in args          # Drift
+        assert 'dev:drift_dev' in args  # Drift dev dep
         assert 'get_it' in args         # Clean Arch + BLoC
 
     @patch('fpc.generators.pubspec._find_flutter', return_value='flutter')
@@ -88,30 +88,18 @@ class TestPubspecUpdater:
         assert 'path_provider' in args, "path_provider missing for SQLite"
         assert 'path' in args,          "path missing for SQLite"
 
-    def test_database_hive(self, tmp_path):
-        """Hive: should add hive, hive_flutter, path, build_runner, hive_generator."""
+    def test_database_drift(self, tmp_path):
+        """Drift: should add drift, sqlite3_flutter_libs, path_provider, path, drift_dev, build_runner."""
         args = _run_pubspec(tmp_path, {
-            'database': 'Hive', 'state_management': 'None',
+            'database': 'Drift', 'state_management': 'None',
             'http_client': 'None', 'baas': 'None', 'architecture': 'MVC'
         })
-        assert 'hive' in args,                  "hive missing"
-        assert 'hive_flutter' in args,           "hive_flutter missing"
-        assert 'path' in args,                   "path missing for Hive"
-        assert 'dev:hive_generator' in args,     "hive_generator dev dep missing"
-        assert 'dev:build_runner' in args,       "build_runner dev dep missing for Hive"
-
-    def test_database_isar(self, tmp_path):
-        """Isar: should add isar, isar_flutter_libs, path_provider, path, isar_generator, build_runner."""
-        args = _run_pubspec(tmp_path, {
-            'database': 'Isar', 'state_management': 'None',
-            'http_client': 'None', 'baas': 'None', 'architecture': 'MVC'
-        })
-        assert 'isar' in args,                  "isar missing"
-        assert 'isar_flutter_libs' in args,      "isar_flutter_libs missing"
-        assert 'path_provider' in args,          "path_provider missing for Isar"
-        assert 'path' in args,                   "path missing for Isar"
-        assert 'dev:isar_generator' in args,     "isar_generator dev dep missing"
-        assert 'dev:build_runner' in args,       "build_runner dev dep missing for Isar"
+        assert 'drift' in args,                  "drift missing"
+        assert 'sqlite3_flutter_libs' in args,   "sqlite3_flutter_libs missing"
+        assert 'path_provider' in args,          "path_provider missing for Drift"
+        assert 'path' in args,                   "path missing for Drift"
+        assert 'dev:drift_dev' in args,          "drift_dev dev dep missing"
+        assert 'dev:build_runner' in args,       "build_runner dev dep missing for Drift"
 
     def test_database_objectbox(self, tmp_path):
         """ObjectBox: should add objectbox, objectbox_flutter_libs, path_provider, path, objectbox_generator, build_runner."""
@@ -210,16 +198,27 @@ class TestPubspecUpdater:
         assert 'supabase_flutter' not in args, "supabase_flutter must not appear for BaaS=None"
         assert 'appwrite' not in args,         "appwrite must not appear for BaaS=None"
 
+    def test_state_management_cubit(self, tmp_path):
+        """Cubit: should add flutter_bloc, equatable, and get_it."""
+        args = _run_pubspec(tmp_path, {
+            'state_management': 'Cubit', 'http_client': 'None',
+            'database': 'None', 'baas': 'None', 'architecture': 'Clean Architecture'
+        })
+        assert 'flutter_bloc' in args, "flutter_bloc missing for Cubit"
+        assert 'equatable' in args,    "equatable missing for Cubit"
+        assert 'get_it' in args,       "get_it missing for Cubit"
+
     # ──────────────────────────────────────────────────────
     # Always-present common dependencies
     # ──────────────────────────────────────────────────────
 
     def test_common_deps_always_present(self, tmp_path):
-        """logger, shared_preferences and intl must always be added regardless of preferences."""
+        """logger, shared_preferences, flutter_secure_storage and intl must always be added regardless of preferences."""
         args = _run_pubspec(tmp_path, {
             'state_management': 'None', 'http_client': 'None',
             'database': 'None', 'baas': 'None', 'architecture': 'MVC'
         })
-        assert 'logger' in args,              "logger always required"
-        assert 'shared_preferences' in args,  "shared_preferences always required"
-        assert 'intl' in args,                "intl always required"
+        assert 'logger' in args,                 "logger always required"
+        assert 'shared_preferences' in args,     "shared_preferences always required"
+        assert 'flutter_secure_storage' in args, "flutter_secure_storage always required"
+        assert 'intl' in args,                   "intl always required"

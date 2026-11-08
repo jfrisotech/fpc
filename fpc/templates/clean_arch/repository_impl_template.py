@@ -1,3 +1,5 @@
+from fpc.core.utils import to_snake_case
+
 def get_repository_impl_template(name: str) -> str:
     # We'll use a generic version of the AuthRepositoryImpl
     # Since it's dynamic generation, we don't know the exact project structure,
@@ -6,7 +8,7 @@ def get_repository_impl_template(name: str) -> str:
 import '../../../core/error/failures.dart';
 import '../../../core/network/network_info.dart';
 import '../../domain/repositories/{to_snake_case(name)}_repository.dart';
-import '../datasources/{to_snake_case(name)}_remote_data_source.dart';
+import '../datasources/remote/{to_snake_case(name)}_remote_data_source.dart';
 
 class {name}RepositoryImpl {{
   final {name}RemoteDataSource remoteDataSource;
@@ -20,5 +22,3 @@ class {name}RepositoryImpl {{
   // TODO: Implement repository methods
 }}
 '''
-
-from fpc.core.utils import to_snake_case

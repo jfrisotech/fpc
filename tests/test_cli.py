@@ -67,3 +67,29 @@ class TestCLI:
         
         # Verify save_config was called with updated data
         mock_config.save_config.assert_called_once_with('/root', {'architecture': 'Clean Architecture'})
+
+    @patch('fpc.cli.FlutterGenerator')
+    @patch('fpc.cli.ConfigManager')
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_cli_create_command_cubit(self, mock_parse, mock_config, mock_gen, tmp_path):
+        """Test 'fpc create -n test_app --state cubit' passes cubit in headless args."""
+        mock_args = MagicMock()
+        mock_args.command = 'create'
+        mock_args.name = 'test_app'
+        mock_args.path = str(tmp_path)
+        mock_args.arch = 'clean'
+        mock_args.state = 'cubit'
+        mock_args.http = 'dio'
+        mock_args.db = 'none'
+        mock_args.baas = 'none'
+        mock_args.structure = 'standard'
+        mock_parse.return_value = mock_args
+
+        generator_instance = mock_gen.return_value
+
+        main()
+
+        generator_instance.run_with_name_interactive.assert_called_once()
+        name, path, headless = generator_instance.run_with_name_interactive.call_args[0]
+        assert name == 'test_app'
+        assert headless['state'] == 'cubit'

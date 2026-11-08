@@ -16,11 +16,16 @@ class {class_name} extends StatelessWidget {{
       appBar: AppBar(
         title: const Text('{class_name}'),
       ),
-      body: Center(
-        child: Observer(
-          builder: (_) {{
-            return Text('Value: ${{controller.value}}');
-          }},
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Observer(
+              builder: (_) {{
+                return Text('Value: ${{controller.value}}');
+              }},
+            ),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
