@@ -21,16 +21,7 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
         database = preferences.get('database')
         baas = preferences.get('baas')
             
-        if database == 'Hive':
-            imports.append("import 'package:hive/hive.dart';")
-            parts.append("part 'user_model.g.dart';")
-            annotations.append("@HiveType(typeId: 0)")
-        elif database == 'Isar':
-            imports.append("import 'package:isar/isar.dart';")
-            parts.append("part 'user_model.g.dart';")
-            annotations.append("@collection")
-            
-        elif database == 'ObjectBox':
+        if database == 'ObjectBox':
             imports.append("import 'package:objectbox/objectbox.dart';")
             annotations.append("@Entity()")
             
@@ -42,9 +33,7 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
     annotations_str = '\n'.join(annotations) + ('\n' if annotations else '')
 
     db_id_field = ""
-    if database == 'Isar':
-        db_id_field = "  Id id = Isar.autoIncrement;\n"
-    elif database == 'ObjectBox':
+    if database == 'ObjectBox':
         db_id_field = "  @Id()\n  int localId = 0;\n"
 
     # Model extends Entity
@@ -86,42 +75,81 @@ def create_clean_architecture_data(lib_path: str, preferences: dict = None):
 ''')
 
     # Remote Data Source
-    with open(os.path.join(datasources_path, 'auth_remote_data_source.dart'), 'w') as file:
-        file.write('''import '../models/user_model.dart';
+    remote_datasources_path = os.path.join(datasources_path, 'remote')
+    os.makedirs(remote_datasources_path, exist_ok=True)
 
-abstract class AuthRemoteDataSource {
+    has_local_db = database and str(database).lower() != 'none'
+    if has_local_db:
+        local_datasources_path = os.path.join(datasources_path, 'local')
+        os.makedirs(local_datasources_path, exist_ok=True)
+        from fpc.templates.clean_arch.data.auth_local_data_source_template import get_auth_local_data_source_content
+        with open(os.path.join(local_datasources_path, 'auth_local_data_source.dart'), 'w') as file:
+            file.write(get_auth_local_data_source_content())
+
+    http_client = preferences.get('http_client') if preferences else None
+    shared_prefix = '../../../../../shared' if preferences and preferences.get('folder_structure') == 'Modular (Feature First)' else '../../../shared'
+    http_import = ""
+    http_field = ""
+    http_constructor = ""
+    if http_client == 'Dio':
+        http_import = f"import '{shared_prefix}/network/dio_client.dart';\n"
+        http_field = "  final DioClient? dioClient;\n"
+        http_constructor = "\n  AuthRemoteDataSourceImpl([this.dioClient]);\n"
+    elif http_client == 'http':
+        http_import = f"import '{shared_prefix}/network/http_client.dart';\n"
+        http_field = "  final HttpClient? httpClient;\n"
+        http_constructor = "\n  AuthRemoteDataSourceImpl([this.httpClient]);\n"
+
+    with open(os.path.join(remote_datasources_path, 'auth_remote_data_source.dart'), 'w') as file:
+        file.write(f'''import '../../models/user_model.dart';
+{http_import}
+abstract class AuthRemoteDataSource {{
   Future<UserModel> login(String email, String password);
   Future<bool> register(String name, String email, String password);
   Future<void> logout();
-}
+}}
 
-class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {{
+{http_field}{http_constructor}
   @override
-  Future<UserModel> login(String email, String password) async {
+  Future<UserModel> login(String email, String password) async {{
     // TODO: Implement API call
-    // Example: final response = await http.post(...)
     // For now, return mock data
     return UserModel(
       uid: '1',
       name: 'Mock User',
       email: email,
     );
-  }
+  }}
 
   @override
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register(String name, String email, String password) async {{
     // TODO: Implement API call
     return true;
-  }
+  }}
 
   @override
-  Future<void> logout() async {
+  Future<void> logout() async {{
     // TODO: Implement logout logic
-  }
-}
+  }}
+}}
 ''')
 
     core_prefix = '../../../../core' if preferences and preferences.get('folder_structure') == 'Modular (Feature First)' else '../../core'
+    local_ds_import = "import '../datasources/local/auth_local_data_source.dart';\n" if has_local_db else ""
+    local_ds_field = "  final AuthLocalDataSource? localDataSource;\n" if has_local_db else ""
+    local_ds_param = "    this.localDataSource,\n" if has_local_db else ""
+
+    cache_on_login = "        await localDataSource?.cacheUser(userModel);\n" if has_local_db else ""
+    offline_fallback = f"""      try {{
+        final cached = await localDataSource?.getLastUser();
+        if (cached != null) {{
+          return Right(cached.toEntity());
+        }}
+        return const Left(NetworkFailure('No internet connection and no cached data'));
+      }} catch (e) {{
+        return Left(CacheFailure(e.toString()));
+      }}""" if has_local_db else "      return const Left(NetworkFailure('No internet connection'));"
 
     # Repository Implementation with Either
     with open(os.path.join(repositories_path, 'auth_repository_impl.dart'), 'w') as file:
@@ -129,16 +157,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 import '{core_prefix}/error/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_remote_data_source.dart';
-import '{core_prefix}/network/network_info.dart';
+import '../datasources/remote/auth_remote_data_source.dart';
+{local_ds_import}import '{core_prefix}/network/network_info.dart';
 
 class AuthRepositoryImpl implements AuthRepository {{
   final AuthRemoteDataSource remoteDataSource;
-  final NetworkInfo networkInfo;
+{local_ds_field}  final NetworkInfo networkInfo;
 
   AuthRepositoryImpl({{
     required this.remoteDataSource,
-    required this.networkInfo,
+{local_ds_param}    required this.networkInfo,
   }});
 
   @override
@@ -146,12 +174,12 @@ class AuthRepositoryImpl implements AuthRepository {{
     if (await networkInfo.isConnected) {{
       try {{
         final userModel = await remoteDataSource.login(email, password);
-        return Right(userModel.toEntity());
+{cache_on_login}        return Right(userModel.toEntity());
       }} catch (e) {{
         return Left(ServerFailure(e.toString()));
       }}
     }} else {{
-      return const Left(NetworkFailure('No internet connection'));
+{offline_fallback}
     }}
   }}
 

@@ -31,6 +31,7 @@ class FlutterGenerator:
         self.state_management_options = [
             'Provider',
             'BLoC',
+            'Cubit',
             'GetX',
             'Riverpod',
             'MobX',
@@ -45,8 +46,7 @@ class FlutterGenerator:
         
         self.database_options = [
             'SQLite (sqflite)',
-            'Hive',
-            'Isar',
+            'Drift',
             'ObjectBox',
             'None',
         ]
@@ -144,7 +144,7 @@ class FlutterGenerator:
         state_management = preferences.get('state_management', '')
         database = preferences.get('database', '')
         
-        if 'MobX' in state_management or any(db in database for db in ['Hive', 'Isar', 'ObjectBox']):
+        if 'MobX' in state_management or any(db in database for db in ['Drift', 'ObjectBox']):
             self.project_manager.run_build_runner(created_project_path)
         
         print_color(f"Flutter project '{project_name}' created successfully!", Colors.GREEN)
@@ -161,13 +161,15 @@ class FlutterGenerator:
             'controller': 'controller',
             'viewmodel': 'viewmodel',
             'vm': 'viewmodel',
+            'cubit': 'cubit',
             'view': 'view',
             'service': 'service',
             'model': 'model',
             'interface': 'interface',
             'repository': 'repository',
             'repository_impl': 'repository_impl',
-            'binding': 'binding'
+            'binding': 'binding',
+            'usecase': 'usecase'
         }
         
         if file_type == 'feature':
@@ -232,13 +234,12 @@ class FlutterGenerator:
             from fpc.templates.common.test_templates import get_unit_test_template, get_widget_test_template
             
             class_name = to_pascal_case(base_name) + to_pascal_case(file_type)
-            # Find relative import path for the tested file
-            # In Flutter tests, we usually use package: imports, but for now we'll just leave a placeholder or comment
+            project_name = os.path.basename(os.path.normpath(project_root))
             
             if file_type == 'view':
-                content = get_widget_test_template(class_name, f"package:your_project/{rel_path}/{base_name}_{file_type}.dart")
+                content = get_widget_test_template(class_name, f"package:{project_name}/{rel_path}/{base_name}_{file_type}.dart")
             else:
-                content = get_unit_test_template(class_name, f"package:your_project/{rel_path}/{base_name}_{file_type}.dart")
+                content = get_unit_test_template(class_name, f"package:{project_name}/{rel_path}/{base_name}_{file_type}.dart")
                 
             with open(test_file_path, 'w') as f:
                 f.write(content)
@@ -279,7 +280,9 @@ class FlutterGenerator:
             presentation_dir = os.path.join(feature_dir, 'presentation')
             
             # Sub-sub folders
-            os.makedirs(os.path.join(data_dir, 'datasources', 'local'), exist_ok=True)
+            database = preferences.get('database', 'none')
+            if database and str(database).lower() != 'none':
+                os.makedirs(os.path.join(data_dir, 'datasources', 'local'), exist_ok=True)
             os.makedirs(os.path.join(data_dir, 'datasources', 'remote'), exist_ok=True)
             os.makedirs(os.path.join(data_dir, 'models'), exist_ok=True)
             os.makedirs(os.path.join(data_dir, 'repositories'), exist_ok=True)
@@ -289,7 +292,6 @@ class FlutterGenerator:
             
             pages_dir = os.path.join(presentation_dir, 'pages')
             os.makedirs(pages_dir, exist_ok=True)
-            os.makedirs(os.path.join(presentation_dir, 'widgets'), exist_ok=True)
             
             # Map state management to folder name
             sm = (state_management or preferences.get('state_management', 'none')).lower()
@@ -298,11 +300,13 @@ class FlutterGenerator:
             elif 'provider' in sm: state_folder = 'providers'
             elif 'getx' in sm: state_folder = 'controllers'
             elif 'mobx' in sm: state_folder = 'store'
+            elif 'cubit' in sm: state_folder = 'cubit'
             
             os.makedirs(os.path.join(presentation_dir, state_folder), exist_ok=True)
             
             # Generate files in their places
-            self.generate_file('controller', os.path.join(presentation_dir, state_folder), feature_name, state_management)
+            ctrl_type = 'cubit' if 'cubit' in sm else 'controller'
+            self.generate_file(ctrl_type, os.path.join(presentation_dir, state_folder), feature_name, state_management)
             self.generate_file('view', pages_dir, feature_name, state_management)
             if 'getx' in sm:
                 bindings_dir = os.path.join(presentation_dir, 'bindings')
@@ -313,19 +317,18 @@ class FlutterGenerator:
             self.generate_file('repository_impl', os.path.join(data_dir, 'repositories'), feature_name, state_management)
             self.generate_file('interface', os.path.join(domain_dir, 'repositories'), f"{feature_name}_repository", state_management)
             self.generate_file('entity', os.path.join(domain_dir, 'entities'), feature_name, state_management)
+            self.generate_file('usecase', os.path.join(domain_dir, 'usecases'), f"{feature_name}_usecase", state_management)
             
         else:
             # MVC / MVVM / Generic subfolders
             ctrl_type = 'viewmodel' if 'MVVM' in architecture else 'controller'
             ctrl_dir = os.path.join(feature_dir, f'{ctrl_type}s')
             view_dir = os.path.join(feature_dir, 'views')
-            repo_dir = os.path.join(feature_dir, 'repositories')
             service_dir = os.path.join(feature_dir, 'services')
             model_dir = os.path.join(feature_dir, 'models')
             
             os.makedirs(ctrl_dir, exist_ok=True)
             os.makedirs(view_dir, exist_ok=True)
-            os.makedirs(repo_dir, exist_ok=True)
             os.makedirs(service_dir, exist_ok=True)
             os.makedirs(model_dir, exist_ok=True)
             
@@ -338,7 +341,6 @@ class FlutterGenerator:
                 self.generate_file('binding', bindings_dir, feature_name, state_management)
             self.generate_file('service', service_dir, feature_name, state_management)
             self.generate_file('model', model_dir, feature_name, state_management)
-            self.generate_file('repository', repo_dir, feature_name, state_management)
         
         self.console.print(f"[bold green]Feature '{feature_name}' generated successfully with {architecture} structure.[/bold green]")
 

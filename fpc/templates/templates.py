@@ -34,6 +34,31 @@ def create_template_files(project_path: str, preferences: dict):
     # Create design system files
     _create_design_system_files(app_path)
     
+    # Create utils files (Responsively)
+    _create_utils_files(app_path)
+    
+    # Create network files (DioClient / HttpClient)
+    _create_network_files(app_path, preferences)
+
+    # Create database helper files (Drift / SQLite)
+    _create_database_files(app_path, preferences)
+
+    # Create secure storage files (FlutterSecureStorage)
+    _create_storage_files(app_path)
+    
+    # Create assets constants file (AppAssets)
+    _create_assets_files(app_path)
+
+    # Create production strict analysis_options.yaml
+    _create_analysis_options(project_path)
+
+    # Create Makefile with project automation commands
+    _create_makefile(project_path)
+
+    # Configure assets declaration in pubspec.yaml if present
+    from fpc.generators.pubspec import configure_pubspec_assets
+    configure_pubspec_assets(project_path)
+
     # Create/Overwrite .gitignore
     with open(os.path.join(project_path, '.gitignore'), 'w') as file:
         file.write(get_gitignore_content())
@@ -105,11 +130,16 @@ def _create_app_config_files(lib_path: str, preferences: dict):
     with open(os.path.join(config_path, 'app_theme.dart'), 'w') as file:
         file.write(get_app_theme_content())
 
+    # Create environment.dart
+    from fpc.templates.common.environment_template import get_environment_content
+    with open(os.path.join(config_path, 'environment.dart'), 'w') as file:
+        file.write(get_environment_content())
+
     # Create service_locator.dart conditionally
     architecture = preferences.get('architecture', '')
     state_management = preferences.get('state_management', 'None')
     
-    if architecture == 'Clean Architecture' or state_management in ['BLoC', 'MobX', 'None']:
+    if architecture == 'Clean Architecture' or state_management in ['BLoC', 'Cubit', 'MobX', 'None']:
         from fpc.templates.common.service_locator_template import get_service_locator_content
         with open(os.path.join(config_path, 'service_locator.dart'), 'w') as file:
             file.write(get_service_locator_content())
@@ -137,7 +167,7 @@ def _create_clean_architecture_template_files(auth_path: str, home_path: str, ap
     # Architecture specifics bound to auth_path (for auth feature)
     create_clean_architecture_data(auth_path, preferences)
     create_clean_architecture_domain(auth_path, preferences)
-    create_clean_architecture_presentation(auth_path, preferences)
+    create_clean_architecture_presentation(auth_path, preferences, home_path=home_path)
     
     # Note: For Clean Arch, we could also create a home page in home_path if needed, 
     # but currently it only generates the auth feature.
@@ -167,6 +197,84 @@ def _create_design_system_files(lib_path: str):
     # Create app_dimensions.dart
     with open(os.path.join(theme_path, 'app_dimensions.dart'), 'w') as file:
         file.write(get_app_dimensions_content())
+
+def _create_utils_files(app_path: str):
+    """Create utility files such as responsively.dart in shared/utils."""
+    from fpc.templates.common.responsively_template import get_responsively_content
+    utils_path = os.path.join(app_path, 'shared', 'utils')
+    os.makedirs(utils_path, exist_ok=True)
+    with open(os.path.join(utils_path, 'responsively.dart'), 'w') as file:
+        file.write(get_responsively_content())
+
+
+def _create_network_files(app_path: str, preferences: dict):
+    """Create HTTP client file in shared/network if configured."""
+    http_client = preferences.get('http_client')
+    if not http_client or http_client.lower() == 'none':
+        return
+
+    network_dir = os.path.join(app_path, 'shared', 'network')
+    os.makedirs(network_dir, exist_ok=True)
+
+    if http_client == 'Dio':
+        from fpc.templates.shared.network.dio_client_template import get_dio_client_content
+        with open(os.path.join(network_dir, 'dio_client.dart'), 'w') as file:
+            file.write(get_dio_client_content())
+    elif http_client == 'http':
+        from fpc.templates.shared.network.http_client_template import get_http_client_content
+        with open(os.path.join(network_dir, 'http_client.dart'), 'w') as file:
+            file.write(get_http_client_content())
+
+
+def _create_database_files(app_path: str, preferences: dict):
+    """Create database helper file in shared/database if configured."""
+    database = preferences.get('database')
+    if not database or database.lower() == 'none':
+        return
+
+    db_dir = os.path.join(app_path, 'shared', 'database')
+    os.makedirs(db_dir, exist_ok=True)
+
+    if database == 'Drift':
+        from fpc.templates.shared.database.drift_database_template import get_drift_database_content
+        with open(os.path.join(db_dir, 'app_database.dart'), 'w') as file:
+            file.write(get_drift_database_content())
+    elif database == 'SQLite (sqflite)':
+        from fpc.templates.shared.database.sqlite_database_template import get_sqlite_database_content
+        with open(os.path.join(db_dir, 'database_helper.dart'), 'w') as file:
+            file.write(get_sqlite_database_content())
+
+
+def _create_storage_files(app_path: str):
+    """Create secure storage helper file in shared/storage."""
+    from fpc.templates.shared.storage.secure_storage_template import get_secure_storage_content
+    storage_dir = os.path.join(app_path, 'shared', 'storage')
+    os.makedirs(storage_dir, exist_ok=True)
+    with open(os.path.join(storage_dir, 'secure_storage_service.dart'), 'w') as file:
+        file.write(get_secure_storage_content())
+
+
+def _create_assets_files(app_path: str):
+    """Create AppAssets helper file in shared/assets."""
+    from fpc.templates.shared.assets.app_assets_template import get_app_assets_content
+    assets_dir = os.path.join(app_path, 'shared', 'assets')
+    os.makedirs(assets_dir, exist_ok=True)
+    with open(os.path.join(assets_dir, 'app_assets.dart'), 'w') as file:
+        file.write(get_app_assets_content())
+
+
+def _create_analysis_options(project_path: str):
+    """Create production-ready strict analysis_options.yaml in project root."""
+    from fpc.templates.common.analysis_options_template import get_analysis_options_content
+    with open(os.path.join(project_path, 'analysis_options.yaml'), 'w') as file:
+        file.write(get_analysis_options_content())
+
+
+def _create_makefile(project_path: str):
+    """Create production-ready Makefile in project root."""
+    from fpc.templates.common.makefile_template import get_makefile_content
+    with open(os.path.join(project_path, 'Makefile'), 'w') as file:
+        file.write(get_makefile_content())
 
 
 def _create_initial_unit_tests(project_path: str, architecture: str, folder_structure: str):

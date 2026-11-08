@@ -71,14 +71,14 @@ MultiProvider(
       ],
       child: const AppWidget(),
     )'''
-    elif state_management == 'BLoC':
+    elif state_management in ['BLoC', 'Cubit']:
         state_management_setup = '''
 import 'package:flutter_bloc/flutter_bloc.dart';
 '''
         app_wrapper = '''
 MultiBlocProvider(
       providers: [
-        // Register your blocs here
+        // Register your blocs/cubits here
         // BlocProvider(create: (_) => YourBloc()),
       ],
       child: const AppWidget(),
@@ -99,7 +99,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
     # DI initialization code
     di_import = ""
     di_init = ""
-    if architecture == 'Clean Architecture' or state_management in ['BLoC', 'MobX', 'None']:
+    if architecture == 'Clean Architecture' or state_management in ['BLoC', 'Cubit', 'MobX', 'None']:
         di_import = "import 'app/config/service_locator.dart' as sl;"
         di_init = "await sl.init();"
 

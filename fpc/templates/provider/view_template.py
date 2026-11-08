@@ -23,11 +23,16 @@ class {view_class} extends StatelessWidget {{
         appBar: AppBar(
           title: const Text('{view_class}'),
         ),
-        body: Center(
-          child: Consumer<{controller_class}>(
-            builder: (context, controller, child) {{
-              return Text('Value: ${{controller.value}}');
-            }},
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Consumer<{controller_class}>(
+                builder: (context, controller, child) {{
+                  return Text('Value: ${{controller.value}}');
+                }},
+              ),
+            ),
           ),
         ),
         floatingActionButton: Consumer<{controller_class}>(

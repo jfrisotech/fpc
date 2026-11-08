@@ -30,13 +30,13 @@ from fpc.project_manager import _flutter_env
 GROUP1 = [
     {"arch": a, "state": s, "http": "none", "db": "none", "baas": "none", "structure": "standard"}
     for a in ["mvc", "mvvm", "clean"]
-    for s in ["provider", "bloc", "getx", "riverpod", "mobx", "none"]
+    for s in ["provider", "bloc", "cubit", "getx", "riverpod", "mobx", "none"]
 ]
 
 # Group 2 — DB variations (arch=clean, state=bloc, http=dio)
 GROUP2 = [
     {"arch": "clean", "state": "bloc", "http": "dio", "db": db, "baas": "none", "structure": "standard"}
-    for db in ["sqlite", "hive", "isar", "objectbox"]
+    for db in ["sqlite", "drift", "objectbox"]
 ]
 
 # Group 3 — Structure modular (arch=mvc + mvvm + clean, key states)
@@ -54,10 +54,10 @@ GROUP4 = [
 
 # Group 5 — Critical combinations (high risk)
 GROUP5 = [
-    {"arch": "clean", "state": "mobx",     "http": "dio",  "db": "hive",      "baas": "firebase",  "structure": "modular"},
-    {"arch": "clean", "state": "riverpod", "http": "dio",  "db": "isar",      "baas": "firebase",  "structure": "modular"},
+    {"arch": "clean", "state": "mobx",     "http": "dio",  "db": "drift",      "baas": "firebase",  "structure": "modular"},
+    {"arch": "clean", "state": "riverpod", "http": "dio",  "db": "drift",      "baas": "firebase",  "structure": "modular"},
     {"arch": "clean", "state": "mobx",     "http": "dio",  "db": "objectbox", "baas": "supabase",  "structure": "modular"},
-    {"arch": "mvvm",  "state": "mobx",     "http": "http", "db": "isar",      "baas": "appwrite",  "structure": "standard"},
+    {"arch": "mvvm",  "state": "mobx",     "http": "http", "db": "drift",      "baas": "appwrite",  "structure": "standard"},
     {"arch": "mvc",   "state": "getx",     "http": "dio",  "db": "objectbox", "baas": "firebase",  "structure": "modular"},
 ]
 

@@ -15,8 +15,13 @@ class {class_name} extends ConsumerWidget {{
       appBar: AppBar(
         title: const Text('{class_name}'),
       ),
-      body: Center(
-        child: Text('Value: $value'),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Text('Value: $value'),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {{

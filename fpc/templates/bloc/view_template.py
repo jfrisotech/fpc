@@ -26,14 +26,19 @@ class {view_class} extends StatelessWidget {{
         appBar: AppBar(
           title: const Text('{view_class}'),
         ),
-        body: Center(
-          child: BlocBuilder<{bloc_class}, {state_class}>(
-            builder: (context, state) {{
-              if (state is {loaded_state}) {{
-                return Text('Value: ${{state.value}}');
-              }}
-              return const Text('Initial State');
-            }},
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: BlocBuilder<{bloc_class}, {state_class}>(
+                builder: (context, state) {{
+                  if (state is {loaded_state}) {{
+                    return Text('Value: ${{state.value}}');
+                  }}
+                  return const Text('Initial State');
+                }},
+              ),
+            ),
           ),
         ),
         floatingActionButton: Builder(
