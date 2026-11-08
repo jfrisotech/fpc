@@ -7,16 +7,7 @@ def get_user_model_content(preferences: dict = None) -> str:
         database = preferences.get('database')
         baas = preferences.get('baas')
             
-        if database == 'Hive':
-            imports.append("import 'package:hive/hive.dart';")
-            parts.append("part 'user_model.g.dart';")
-            annotations.append("@HiveType(typeId: 0)")
-        elif database == 'Isar':
-            imports.append("import 'package:isar/isar.dart';")
-            parts.append("part 'user_model.g.dart';")
-            annotations.append("@collection")
-            
-        elif database == 'ObjectBox':
+        if database == 'ObjectBox':
             imports.append("import 'package:objectbox/objectbox.dart';")
             annotations.append("@Entity()")
             
@@ -28,9 +19,7 @@ def get_user_model_content(preferences: dict = None) -> str:
     annotations_str = '\n'.join(annotations) + ('\n' if annotations else '')
     
     db_id_field = ""
-    if database == 'Isar':
-        db_id_field = "  Id id = Isar.autoIncrement;\n"
-    elif database == 'ObjectBox':
+    if database == 'ObjectBox':
         db_id_field = "  @Id()\n  int localId = 0;\n"
 
     return f'''{imports_str}{parts_str}{annotations_str}class UserModel {{

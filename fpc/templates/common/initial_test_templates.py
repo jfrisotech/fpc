@@ -134,7 +134,7 @@ def get_clean_repository_impl_test(project_name: str, is_modular: bool) -> str:
     return f'''import 'package:flutter_test/flutter_test.dart';
 // TODO: import 'package:mocktail/mocktail.dart'; (add mocktail to dev_dependencies)
 // import '{prefix}/data/repositories/auth_repository_impl.dart';
-// import '{prefix}/data/datasources/auth_remote_data_source.dart';
+// import '{prefix}/data/datasources/remote/auth_remote_data_source.dart';
 // import '{base}/core/network/network_info.dart';
 
 void main() {{

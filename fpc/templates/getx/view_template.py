@@ -21,8 +21,13 @@ class {view_class} extends GetView<{controller_class}> {{
       appBar: AppBar(
         title: const Text('{view_class}'),
       ),
-      body: Center(
-        child: Obx(() => Text('Value: ${{controller.count}}')),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Obx(() => Text('Value: ${{controller.count}}')),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.increment,

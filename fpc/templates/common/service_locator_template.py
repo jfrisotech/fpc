@@ -13,7 +13,7 @@ Future<void> init() async {
   // UseCases
   // sl.registerLazySingleton(() => LoginUseCase(sl()));
   
-  // State Management (Controllers/ViewModels/Blocs)
+  // State Management (Controllers/ViewModels/Blocs/Cubits)
   // sl.registerFactory(() => AuthViewModel(sl()));
 }
 '''

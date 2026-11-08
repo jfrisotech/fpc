@@ -23,6 +23,9 @@ def update_pubspec(project_path: str, preferences: dict):
     elif state_management == 'BLoC':
         deps_to_fetch.add('flutter_bloc')
         deps_to_fetch.add('equatable')
+    elif state_management == 'Cubit':
+        deps_to_fetch.add('flutter_bloc')
+        deps_to_fetch.add('equatable')
     elif state_management == 'GetX':
         deps_to_fetch.add('get')
     elif state_management == 'Riverpod':
@@ -44,15 +47,11 @@ def update_pubspec(project_path: str, preferences: dict):
     if database == 'SQLite (sqflite)':
         deps_to_fetch.add('sqflite')
         deps_to_fetch.add('path_provider')
-    elif database == 'Hive':
-        deps_to_fetch.add('hive')
-        deps_to_fetch.add('hive_flutter')
-        dev_deps_to_fetch.add('hive_generator')
-    elif database == 'Isar':
-        deps_to_fetch.add('isar')
-        deps_to_fetch.add('isar_flutter_libs')
+    elif database == 'Drift':
+        deps_to_fetch.add('drift')
+        deps_to_fetch.add('sqlite3_flutter_libs')
         deps_to_fetch.add('path_provider')
-        dev_deps_to_fetch.add('isar_generator')
+        dev_deps_to_fetch.add('drift_dev')
     elif database == 'ObjectBox':
         deps_to_fetch.add('objectbox')
         deps_to_fetch.add('objectbox_flutter_libs')
@@ -73,17 +72,18 @@ def update_pubspec(project_path: str, preferences: dict):
     # Common utility dependencies (always added)
     deps_to_fetch.add('logger')          # Bug #3 fix: logger is a runtime dep
     deps_to_fetch.add('shared_preferences')
+    deps_to_fetch.add('flutter_secure_storage')
     deps_to_fetch.add('intl')
     # Bug #8 fix: 'path' only needed when dealing with local file paths (DB)
-    if database in ['SQLite (sqflite)', 'Hive', 'Isar', 'ObjectBox']:
+    if database in ['SQLite (sqflite)', 'Drift', 'ObjectBox']:
         deps_to_fetch.add('path')
-    # Bug #2 fix: get_it for DI — used by Clean Arch always, and by BLoC/MobX/Provider/None
+    # Bug #2 fix: get_it for DI — used by Clean Arch always, and by BLoC/Cubit/MobX/Provider/None
     # Riverpod has its own DI via ProviderScope, GetX uses Get.put/find
-    if architecture == 'Clean Architecture' or state_management in ['Provider', 'BLoC', 'MobX', 'None']:
+    if architecture == 'Clean Architecture' or state_management in ['Provider', 'BLoC', 'Cubit', 'MobX', 'None']:
         deps_to_fetch.add('get_it')
 
     # Dev dependencies for build_runner
-    if state_management == 'MobX' or database in ['Hive', 'Isar', 'ObjectBox']:
+    if state_management == 'MobX' or database in ['Drift', 'ObjectBox']:
         dev_deps_to_fetch.add('build_runner')
 
     flutter_bin = _find_flutter()
@@ -106,4 +106,42 @@ def update_pubspec(project_path: str, preferences: dict):
             except subprocess.CalledProcessError as e:
                 print_color(f"Error resolving dependencies: {e.stderr}", Colors.RED)
 
+    # Configure assets in pubspec.yaml
+    configure_pubspec_assets(project_path)
+
     print_color("pubspec.yaml updated with compatible versions successfully!", Colors.GREEN)
+
+
+def configure_pubspec_assets(project_path: str):
+    """Ensure assets (assets/images/, assets/icons/) are declared in pubspec.yaml under flutter: assets:"""
+    pubspec_path = os.path.join(project_path, 'pubspec.yaml')
+    if not os.path.exists(pubspec_path):
+        return
+
+    with open(pubspec_path, 'r') as f:
+        content = f.read()
+
+    if 'assets/images/' in content and 'assets/icons/' in content:
+        return
+
+    if 'flutter:' in content:
+        if 'assets:' in content:
+            lines = content.split('\n')
+            new_lines = []
+            for line in lines:
+                new_lines.append(line)
+                if line.strip() == 'assets:':
+                    indent = '    ' if line.startswith('  ') else '  '
+                    if 'assets/images/' not in content:
+                        new_lines.append(f'{indent}- assets/images/')
+                    if 'assets/icons/' not in content:
+                        new_lines.append(f'{indent}- assets/icons/')
+            content = '\n'.join(new_lines)
+        else:
+            content = content.replace('flutter:', 'flutter:\n  assets:\n    - assets/images/\n    - assets/icons/')
+    else:
+        content = content.rstrip() + '\n\nflutter:\n  assets:\n    - assets/images/\n    - assets/icons/\n'
+
+    with open(pubspec_path, 'w') as f:
+        f.write(content)
+

@@ -48,8 +48,12 @@ COMMON_DIRS = [
     "lib/app/config",
     "lib/app/shared",
     "lib/app/shared/theme",
-    "lib/app/utils",
+    "lib/app/shared/utils",
+    "lib/app/shared/assets",
+    "lib/app/shared/storage",
     "assets",
+    "assets/images",
+    "assets/icons",
     "test",
 ]
 
@@ -58,27 +62,36 @@ COMMON_FILES = [
     "lib/app/app_widget.dart",
     "lib/app/config/app_routes.dart",
     "lib/app/config/app_theme.dart",
+    "lib/app/config/environment.dart",
+    "lib/app/shared/utils/responsively.dart",
     "lib/app/shared/theme/app_colors.dart",
     "lib/app/shared/theme/app_typography.dart",
     "lib/app/shared/theme/app_spacing.dart",
     "lib/app/shared/theme/app_dimensions.dart",
+    "lib/app/shared/assets/app_assets.dart",
+    "lib/app/shared/storage/secure_storage_service.dart",
+    "assets/images/.gitkeep",
+    "assets/icons/.gitkeep",
     "test/widget_test.dart",
     ".gitignore",
+    "analysis_options.yaml",
+    "Makefile",
 ]
 
 ARCH_DIRS = {
-    "mvc": ["models", "views", "controllers", "services", "repositories", "widgets"],
-    "mvvm": ["models", "views", "viewmodels", "services", "repositories", "widgets"],
+    "mvc": ["models", "views", "controllers", "services"],
+    "mvvm": ["models", "views", "viewmodels", "services"],
     "clean": [
-        "data", "data/datasources", "data/datasources/local", "data/datasources/remote",
+        "data", "data/datasources", "data/datasources/remote",
         "data/models", "data/repositories",
         "domain", "domain/entities", "domain/repositories", "domain/usecases",
-        "presentation", "presentation/pages", "presentation/widgets",
+        "presentation", "presentation/pages",
     ],
 }
 
 STATE_PRESENTATION_DIRS = {
     "bloc": "presentation/bloc",
+    "cubit": "presentation/cubit",
     "mobx": "presentation/store",
     "getx": "presentation/controllers",
     "riverpod": "presentation/notifiers",
@@ -90,6 +103,7 @@ ARCH_FILES = {
         "models/user_model.dart",
         "controllers/auth_controller.dart",
         "services/auth_service.dart",
+        "views/splash_view.dart",
         "views/login_view.dart",
         "views/home_view.dart",
     },
@@ -97,24 +111,27 @@ ARCH_FILES = {
         "models/user_model.dart",
         "viewmodels/auth_viewmodel.dart",
         "services/auth_service.dart",
+        "views/splash_view.dart",
         "views/login_view.dart",
         "views/home_view.dart",
     },
     "clean": {
         "data/models/user_model.dart",
-        "data/datasources/auth_remote_data_source.dart",
+        "data/datasources/remote/auth_remote_data_source.dart",
         "data/repositories/auth_repository_impl.dart",
         "domain/entities/user.dart",
         "domain/repositories/auth_repository.dart",
         "domain/usecases/login_usecase.dart",
         "domain/usecases/register_usecase.dart",
         "domain/usecases/logout_usecase.dart",
+        "presentation/pages/splash_page.dart",
         "presentation/pages/login_page.dart",
+        "presentation/pages/home_page.dart",
     },
 }
 
 CLEAN_CORE_DIRS = [
-    "core", "core/error", "core/network", "core/usecases", "core/util",
+    "core", "core/error", "core/network", "core/usecases",
 ]
 
 CLEAN_CORE_FILES = [
@@ -162,6 +179,9 @@ def validate_directory_structure(project_path: str, arch: str, state: str, struc
 
     # Clean Arch extra: core in lib/app
     if arch_key == "clean":
+        if db and db.lower() != "none":
+            check_dir(os.path.join(arch_base, "data/datasources/local"))
+            check_file(os.path.join(arch_base, "data/datasources/local/auth_local_data_source.dart"))
         for d in CLEAN_CORE_DIRS:
             check_dir(os.path.join("lib/app", d))
         for f in CLEAN_CORE_FILES:
@@ -241,6 +261,7 @@ def validate_main_dart(project_path: str, state: str, arch: str) -> List[Validat
     expected = {
         "provider": ("MultiProvider", "package:provider/provider.dart"),
         "bloc": ("MultiBlocProvider", "package:flutter_bloc/flutter_bloc.dart"),
+        "cubit": ("MultiBlocProvider", "package:flutter_bloc/flutter_bloc.dart"),
         "riverpod": ("ProviderScope", "package:flutter_riverpod/flutter_riverpod.dart"),
     }
 
@@ -253,7 +274,7 @@ def validate_main_dart(project_path: str, state: str, arch: str) -> List[Validat
             errors.append(error("IMPORT", f"main.dart missing import '{imp}' for {state}", main_file))
 
     # DI init
-    if arch == "clean" or state.lower() in ["bloc", "mobx", "none"]:
+    if arch == "clean" or state.lower() in ["bloc", "cubit", "mobx", "none"]:
         if "service_locator" not in content and "sl.init" not in content:
             errors.append(warning("DI", "main.dart might be missing service locator init", main_file))
 
@@ -332,20 +353,19 @@ def validate_pubspec_deps(project_path: str, state: str, arch: str, http: str, d
     expected_deps = {
         "provider": ["provider"],
         "bloc": ["flutter_bloc", "equatable"],
+        "cubit": ["flutter_bloc", "equatable"],
         "getx": ["get"],
         "riverpod": ["flutter_riverpod"],
         "mobx": ["mobx", "flutter_mobx"],
     }
     expected_dev_deps = {
         "mobx": ["mobx_codegen", "build_runner"],
-        "hive": ["hive_generator", "build_runner"],
-        "isar": ["isar_generator", "build_runner"],
+        "drift": ["drift_dev", "build_runner"],
         "objectbox": ["objectbox_generator", "build_runner"],
     }
     expected_db_deps = {
         "sqlite": ["sqflite", "path_provider"],
-        "hive": ["hive", "hive_flutter"],
-        "isar": ["isar", "isar_flutter_libs", "path_provider"],
+        "drift": ["drift", "sqlite3_flutter_libs", "path_provider"],
         "objectbox": ["objectbox", "objectbox_flutter_libs", "path_provider"],
     }
     expected_baas_deps = {

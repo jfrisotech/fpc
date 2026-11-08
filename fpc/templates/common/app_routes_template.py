@@ -14,7 +14,7 @@ def get_app_routes_content(preferences: dict = None) -> str:
     if is_modular:
         if is_clean:
             auth_relative_path = "../modules/auth/presentation/pages"
-            home_relative_path = "../modules/home/presentation/pages" # Future-proofing
+            home_relative_path = "../modules/home/presentation/pages"
             auth_binding_relative_path = "../modules/auth/presentation/bindings/auth"
         else:
             auth_relative_path = "../modules/auth/views"
@@ -30,58 +30,67 @@ def get_app_routes_content(preferences: dict = None) -> str:
             home_relative_path = "../views"
             auth_binding_relative_path = "../bindings"
 
-    # View names
-    if is_clean:
-        login_view_name = "LoginPage"
-    else:
-        login_view_name = "LoginView"
-        
-    # We only have HomeView in MVC/MVVM templates for now
-    has_home = not is_clean
-    
-    home_import = f"import '{home_relative_path}/home_view.dart';" if has_home else ""
-    home_route = f"'/home': (context) => const HomeView()," if has_home else ""
-    
+    # View & file names
+    splash_view_name = "SplashPage" if is_clean else "SplashView"
+    login_view_name = "LoginPage" if is_clean else "LoginView"
+    home_view_name = "HomePage" if is_clean else "HomeView"
+
+    splash_file_name = "splash_page.dart" if is_clean else "splash_view.dart"
     login_file_name = "login_page.dart" if is_clean else "login_view.dart"
+    home_file_name = "home_page.dart" if is_clean else "home_view.dart"
+
+    splash_import = f"import '{auth_relative_path}/{splash_file_name}';"
     login_import = f"import '{auth_relative_path}/{login_file_name}';"
+    home_import = f"import '{home_relative_path}/{home_file_name}';"
 
     if is_getx:
         binding_import = f"import 'package:get/get.dart';\nimport '{auth_binding_relative_path}/auth_binding.dart';"
-        home_page = "\n    GetPage(name: '/home', page: () => const HomeView())," if has_home else ""
         
         return f'''import 'package:flutter/material.dart';
 {binding_import}
-{home_import}
+{splash_import}
 {login_import}
+{home_import}
 
 class AppRoutes {{
-  static const String initialRoute = '/login';
+  static const String initialRoute = '/splash';
   
   static final List<GetPage> pages = [
+    GetPage(
+      name: '/splash',
+      page: () => const {splash_view_name}(),
+    ),
     GetPage(
       name: '/login',
       page: () => const {login_view_name}(),
       binding: AuthBinding(),
-    ),{home_page}
+    ),
+    GetPage(
+      name: '/home',
+      page: () => const {home_view_name}(),
+    ),
   ];
   
   static final Map<String, WidgetBuilder> routes = {{
+    '/splash': (context) => const {splash_view_name}(),
     '/login': (context) => const {login_view_name}(),
-    {home_route}
+    '/home': (context) => const {home_view_name}(),
   }};
 }}
 '''
     else:
         return f'''import 'package:flutter/material.dart';
-{home_import}
+{splash_import}
 {login_import}
+{home_import}
 
 class AppRoutes {{
-  static const String initialRoute = '/login';
+  static const String initialRoute = '/splash';
   
   static final Map<String, WidgetBuilder> routes = {{
+    '/splash': (context) => const {splash_view_name}(),
     '/login': (context) => const {login_view_name}(),
-    {home_route}
+    '/home': (context) => const {home_view_name}(),
   }};
 }}
 '''

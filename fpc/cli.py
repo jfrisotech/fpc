@@ -28,9 +28,9 @@ def main():
     create_parser.add_argument('-n', '--name', required=True, help='Project name')
     create_parser.add_argument('-p', '--path', default=os.getcwd(), help='Output directory path')
     create_parser.add_argument('--arch', choices=['mvc', 'mvvm', 'clean'], help='Architecture pattern')
-    create_parser.add_argument('--state', choices=['provider', 'bloc', 'getx', 'riverpod', 'mobx', 'none'], help='State management')
+    create_parser.add_argument('--state', choices=['provider', 'bloc', 'cubit', 'getx', 'riverpod', 'mobx', 'none'], help='State management')
     create_parser.add_argument('--http', choices=['dio', 'http', 'none'], help='HTTP Client')
-    create_parser.add_argument('--db', choices=['sqlite', 'hive', 'isar', 'objectbox', 'none'], help='Local database')
+    create_parser.add_argument('--db', choices=['sqlite', 'drift', 'objectbox', 'none'], help='Local database')
     create_parser.add_argument('--baas', choices=['firebase', 'supabase', 'appwrite', 'none'], help='Backend as a Service')
     create_parser.add_argument('--structure', choices=['standard', 'modular'], help='Folder structure pattern')
 
@@ -49,7 +49,7 @@ def main():
 
     # gen command
     gen_parser = subparsers.add_parser('gen', help='Generate a file with specific state management')
-    gen_parser.add_argument('type', choices=['controller', 'ctrl', 'view', 'model', 'service', 'interface', 'intf', 'feature'], help='Type of file to generate')
+    gen_parser.add_argument('type', choices=['controller', 'ctrl', 'viewmodel', 'vm', 'cubit', 'view', 'model', 'service', 'interface', 'intf', 'usecase', 'feature'], help='Type of file to generate')
     gen_parser.add_argument('path', help='Path to the file (including name)')
     gen_parser.add_argument('-s', '--state', help='State management solution (overrides project default)')
     

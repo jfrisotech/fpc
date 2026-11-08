@@ -60,7 +60,25 @@ class TestFlutterGenerator:
             assert any('presentation' in c for c in calls)
             
             # Verify individual files were generated
-            assert mock_gen_file.call_count >= 4 # controller, view, service, model
+            assert mock_gen_file.call_count >= 5 # controller, view, service, model, usecase
+            mock_gen_file.assert_any_call('usecase', os.path.join('/lib', 'auth', 'domain', 'usecases'), 'auth_usecase', 'BLoC')
+
+    @patch('os.makedirs')
+    def test_generate_feature_clean_arch_cubit(self, mock_makedirs, generator, mock_services):
+        """Test generating a feature with Clean Architecture structure and Cubit state management."""
+        mock_services['config'].get_config.return_value = {
+            'architecture': 'Clean Architecture',
+            'state_management': 'Cubit'
+        }
+        
+        with patch.object(generator, 'generate_file') as mock_gen_file:
+            generator._generate_feature('/lib', 'auth', 'Cubit')
+            
+            calls = [call[0][0] for call in mock_makedirs.call_args_list]
+            assert any('cubit' in c for c in calls)
+            
+            # Verify cubit file was generated instead of controller
+            mock_gen_file.assert_any_call('cubit', os.path.join('/lib', 'auth', 'presentation', 'cubit'), 'auth', 'Cubit')
 
     @patch('os.makedirs')
     def test_generate_feature_modular_path(self, mock_makedirs, generator, mock_services):
